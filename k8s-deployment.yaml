@@ -1,0 +1,53 @@
+# k8s-deployment.yaml (Phase 13: Kubernetes Orchestration)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hostamar-backend
+  labels:
+    app: hostamar
+spec:
+  replicas: 3 # Start with 3 instances for high availability
+  selector:
+    matchLabels:
+      app: hostamar
+  template:
+    metadata:
+      labels:
+        app: hostamar
+    spec:
+      containers:
+      - name: hostamar-api
+        image: hostamar/enterprise:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: hostamar-secrets
+              key: database-url
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: hostamar-secrets
+              key: openai-key
+        resources:
+          limits:
+            cpu: "1"
+            memory: "2Gi"
+          requests:
+            cpu: "500m"
+            memory: "1Gi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hostamar-service
+spec:
+  selector:
+    app: hostamar
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
+  type: LoadBalancer

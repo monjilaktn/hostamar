@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/app/data
+      - ./uploads:/app/uploads
+      - ./knowledge_base:/app/knowledge_base
+    env_file:
+      - .env
+    restart: always
+    depends_on:
+      - ollama
+      - redis
+
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ./ollama:/root/.ollama
+    restart: always
+
+  redis:
+    image: "redis:alpine"
+    ports:
+      - "6379:6379"

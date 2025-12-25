@@ -1,0 +1,7 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'hostamar-ai'
+    static_configs:
+      - targets: ['hostamar-blue:8080', 'hostamar-green:8080']

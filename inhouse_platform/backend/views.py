@@ -11,10 +11,24 @@ class LeadViewSet(viewsets.ModelViewSet):
             return [permissions.AllowAny()]
         return [permissions.IsAuthenticated()]
 
+from rest_framework.decorators import action
+from rest_framework.response import Response
+
 class DeploymentViewSet(viewsets.ModelViewSet):
     queryset = Deployment.objects.all().order_by('-deployed_at')
     serializer_class = DeploymentSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    @action(detail=False, methods=['get'])
+    def summary(self, request):
+        total_leads = Lead.objects.count()
+        # Mock data for now, can be connected to real metrics later
+        return Response({
+            'revenue': 1240.00,
+            'leads': total_leads,
+            'servers': 42,
+            'ai_thought': 'Local DeepSeek-R1 is monitoring your infrastructure.'
+        })
 
 class DGPAssetViewSet(viewsets.ModelViewSet):
     """

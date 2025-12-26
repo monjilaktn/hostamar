@@ -15,6 +15,7 @@ from app.tools.shell_tool import ShellTool
 from app.tools.roadmap_tool import RoadmapTool
 from app.tools.file_tool import WriteFileTool
 from app.tools.notification_tool import NotificationTool
+from app.tools.marketing_tool import MarketingTool
 
 TOOL_MAP = {
     "search_tenders": search_tenders,
@@ -26,7 +27,8 @@ TOOL_MAP = {
     "shell_executor": ShellTool(),
     "roadmap_executor": RoadmapTool(),
     "file_writer": WriteFileTool(),
-    "send_notification": NotificationTool()
+    "send_notification": NotificationTool(),
+    "marketing_generator": MarketingTool()
 }
 
 class AgentFactory:

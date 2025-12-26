@@ -30,8 +30,10 @@ class AgentFactory:
         else:
             self.config = {"agents": []}
             
+        model_name = os.getenv("OPENAI_MODEL_NAME", "deepseek-r1:1.5b").strip()
+            
         self.llm = ChatOpenAI(
-            model=os.getenv("OPENAI_MODEL_NAME", "gpt-4o"),
+            model=model_name,
             base_url=os.getenv("OPENAI_API_BASE"),
             api_key=os.getenv("OPENAI_API_KEY", "dummy"),
             temperature=0

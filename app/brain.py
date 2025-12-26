@@ -13,11 +13,13 @@ from app.factory import AgentFactory
 
 factory = AgentFactory()
 agent_names = factory.list_agents()
+model_name = os.getenv("OPENAI_MODEL_NAME", "deepseek-r1:1.5b").strip()
+
 llm = ChatOpenAI(
-    model=os.getenv("OPENAI_MODEL_NAME", "gpt-4o"),
+    model=model_name,
     base_url=os.getenv("OPENAI_API_BASE"),
     api_key=os.getenv("OPENAI_API_KEY", "dummy"),
-    timeout=600 # 10 minutes for slow local inference
+    timeout=600 
 )
 
 system_prompt = (

@@ -1,16 +1,16 @@
-# app/brain.py (Phase 10 Specialized Supervisor)
-import sqlite3
-import operator
+# app/brain.py
 import os
+import operator
 from typing import Annotated, Sequence, TypedDict
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import BaseMessage
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langgraph.graph import StateGraph, END, START
 from langgraph.prebuilt import ToolNode
-from langgraph.checkpoint.memory import MemorySaver
 from app.factory import AgentFactory
+from langchain_core.output_parsers import StrOutputParser
 
+# 1. Configuration & Model Setup
 factory = AgentFactory()
 agent_names = factory.list_agents()
 model_name = os.getenv("OPENAI_MODEL_NAME", "deepseek-r1:1.5b").strip()
@@ -22,31 +22,25 @@ llm = ChatOpenAI(
     timeout=600 
 )
 
-# Global configuration (Updated for DGP 100 Assets)
-system_prompt = f"""You are Hostamar AI, a specialized infrastructure and asset management assistant.
+# 2. System Prompt Definition
+# We define a generic system prompt. The actual user context will be injected dynamically
+# by the backend before calling this module, or we can assume a default here.
+SYSTEM_PROMPT_TEMPLATE = """You are Hostamar AI, a specialized infrastructure and asset management assistant.
 You have exclusive access to the DGP (Digital Gold Points) dataset containing 100 proprietary tokens.
 
 When users ask about 'DGP' or specific tokens like 'DGP42', provide professional insights based on our platform metrics.
-Always prioritize security and infrastructure stability."""
+Always prioritize security and infrastructure stability.
 
-options = ["FINISH"] + agent_names
-func_def = {
-    "name": "route",
-    "parameters": {
-        "type": "object",
-        "properties": {"next": {"enum": options}},
-        "required": ["next"]
-    }
-}
+You have access to a team of experts: {agents}.
+If the user's request matches an expert's domain, route it to them.
+Otherwise, answer directly or route to 'FINISH'."""
 
-from langchain_core.output_parsers import StrOutputParser
-
-# Refactored Supervisor for models without tool support
 supervisor_prompt = ChatPromptTemplate.from_messages([
-    ("system", system_prompt + "\nResponse format: Just the name of the expert (e.g. Legal Expert) or 'FINISH'."),
+    ("system", SYSTEM_PROMPT_TEMPLATE),
     MessagesPlaceholder(variable_name="messages"),
-]).partial(options=str(options))
+]).partial(agents=str(agent_names))
 
+# 3. Routing Logic
 def route_parser(text):
     text = text.strip().upper()
     for name in agent_names:
@@ -56,7 +50,7 @@ def route_parser(text):
 
 supervisor_chain = supervisor_prompt | llm | StrOutputParser() | route_parser
 
-
+# 4. Graph Definition
 class AgentState(TypedDict):
     messages: Annotated[Sequence[BaseMessage], operator.add]
     next: str
@@ -78,22 +72,10 @@ for name in agent_names:
 workflow.add_conditional_edges("supervisor", lambda x: x["next"], {**{n:n for n in agent_names}, "FINISH": END})
 workflow.add_edge(START, "supervisor")
 
+# 5. Initialization
 agent_executor = None
 async def init_brain():
     global agent_executor
-    
-    # Simple direct chain for testing basic LLM connectivity
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", "You are a helpful assistant."),
-        MessagesPlaceholder(variable_name="messages"),
-    ])
-    
-    chain = prompt | llm
-    
-    # Wrap in a simple runnable to match expected interface
-    async def simple_executor(input_dict, config=None):
-        response = await chain.ainvoke(input_dict)
-        return {"messages": [response]}
-
-    agent_executor = type('obj', (object,), {'ainvoke': simple_executor})
+    # Compile the graph into a runnable
+    agent_executor = workflow.compile()
     return agent_executor

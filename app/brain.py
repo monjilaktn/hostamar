@@ -22,20 +22,13 @@ llm = ChatOpenAI(
     timeout=600 
 )
 
-    # Default context if not provided
-    if user_context is None:
-        user_context = {}
+# Global configuration (Updated for DGP 100 Assets)
+system_prompt = f"""You are Hostamar AI, a specialized infrastructure and asset management assistant.
+You have exclusive access to the DGP (Digital Gold Points) dataset containing 100 proprietary tokens.
 
-    system_prompt = f"""You are Hostamar AI, a specialized infrastructure and asset management assistant.
-    You have exclusive access to the DGP (Digital Gold Points) dataset containing 100 proprietary tokens.
-    
-    Context Information:
-    - User: {user_context.get('username', 'Guest')}
-    - Role: {user_context.get('role', 'user')}
-    - DGP Tokens: Managed in system registry.
-    
-    When users ask about 'DGP' or specific tokens like 'DGP42', provide professional insights based on our platform metrics.
-    Always prioritize security and infrastructure stability."""
+When users ask about 'DGP' or specific tokens like 'DGP42', provide professional insights based on our platform metrics.
+Always prioritize security and infrastructure stability."""
+
 options = ["FINISH"] + agent_names
 func_def = {
     "name": "route",
@@ -45,11 +38,6 @@ func_def = {
         "required": ["next"]
     }
 }
-prompt = ChatPromptTemplate.from_messages([
-    ("system", system_prompt),
-    MessagesPlaceholder(variable_name="messages"),
-    ("system", "Next action? {options}")
-]).partial(options=str(options))
 
 from langchain_core.output_parsers import StrOutputParser
 

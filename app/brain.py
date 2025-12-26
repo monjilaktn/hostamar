@@ -22,7 +22,11 @@ llm = ChatOpenAI(
     timeout=600 
 )
 
-system_prompt = f"""You are Hostamar AI, a specialized infrastructure and asset management assistant.
+    # Default context if not provided
+    if user_context is None:
+        user_context = {}
+
+    system_prompt = f"""You are Hostamar AI, a specialized infrastructure and asset management assistant.
     You have exclusive access to the DGP (Digital Gold Points) dataset containing 100 proprietary tokens.
     
     Context Information:
@@ -32,7 +36,6 @@ system_prompt = f"""You are Hostamar AI, a specialized infrastructure and asset 
     
     When users ask about 'DGP' or specific tokens like 'DGP42', provide professional insights based on our platform metrics.
     Always prioritize security and infrastructure stability."""
-
 options = ["FINISH"] + agent_names
 func_def = {
     "name": "route",

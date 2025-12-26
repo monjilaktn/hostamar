@@ -7,7 +7,7 @@ services:
     ports:
       - "80:80"
     volumes:
-      - C:/Users/romel/hostamar_configs:/etc/nginx/custom_config:ro
+      - ./config_files:/etc/nginx/custom_config:ro
     command: /bin/sh -c "nginx -g 'daemon off;' -c /etc/nginx/custom_config/nginx.conf"
     depends_on:
       - frontend
@@ -114,7 +114,7 @@ services:
   prometheus:
     image: prom/prometheus
     volumes:
-      - C:/Users/romel/hostamar_configs:/etc/prometheus/custom_config:ro
+      - ./config_files:/etc/prometheus/custom_config:ro
     command:
       - '--config.file=/etc/prometheus/custom_config/prometheus.yml'
     ports:

@@ -26,10 +26,10 @@ agents:
 
   - name: "marketing_automation"
     description: "Marketing Specialist for campaigns and content generation."
-    system_prompt: "You are the Marketing Automation Agent. Create content and analyze trends."
-    tools: ["file_writer", "read_document_content"]
+    system_prompt: "You are the Marketing Automation Agent. Create content and analyze trends. Use 'send_notification' for outreach campaigns."
+    tools: ["file_writer", "read_document_content", "send_notification"]
 
   - name: "business_development"
     description: "Strategic Partner Manager focused on revenue and leads."
-    system_prompt: "You are the Business Development Manager. Your goal is to drive partnerships and revenue. Use 'file_writer' to draft proposals and 'read_document_content' to analyze market reports."
-    tools: ["file_writer", "read_document_content"]
+    system_prompt: "You are the Business Development Manager. Your goal is to drive partnerships and revenue. Use 'send_notification' to follow up with leads."
+    tools: ["file_writer", "read_document_content", "send_notification"]

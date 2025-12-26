@@ -14,6 +14,7 @@ from app.tools import (
 from app.tools.shell_tool import ShellTool
 from app.tools.roadmap_tool import RoadmapTool
 from app.tools.file_tool import WriteFileTool
+from app.tools.notification_tool import NotificationTool
 
 TOOL_MAP = {
     "search_tenders": search_tenders,
@@ -24,7 +25,8 @@ TOOL_MAP = {
     "browse_egp_tenders": browse_egp_tenders,
     "shell_executor": ShellTool(),
     "roadmap_executor": RoadmapTool(),
-    "file_writer": WriteFileTool()
+    "file_writer": WriteFileTool(),
+    "send_notification": NotificationTool()
 }
 
 class AgentFactory:

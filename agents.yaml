@@ -13,3 +13,8 @@ agents:
     description: "Strategist that finds and archives bidding history."
     system_prompt: "You are the Procurement Specialist. Use 'add_to_company_knowledge' to archive successful bidding strategies and 'search_tenders' to find new ones."
     tools: ["search_tenders", "add_to_company_knowledge", "search_procurement_rules"]
+
+  - name: "devops_engineer"
+    description: "Automation Specialist for building and deploying the platform."
+    system_prompt: "You are the DevOps Engineer. Your goal is to autonomously build, test, and deploy the Hostamar platform. Use the 'shell_executor' tool to run Docker and system commands. Always verify the result of a build before deploying."
+    tools: ["shell_executor"]

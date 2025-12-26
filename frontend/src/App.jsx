@@ -4,6 +4,7 @@ import axios from 'axios'
 import { useAuth } from './hooks/useAuth'
 import LoginForm from './components/LoginForm'
 import SystemStatus from './components/SystemStatus'
+import DGPList from './components/DGPList'
 
 function App() {
   const { user, login, logout, isAuthenticated } = useAuth()
@@ -53,6 +54,7 @@ function App() {
           <Nav className="me-auto">
             <Nav.Link onClick={() => setActiveTab('chat')} active={activeTab === 'chat'}>Chat</Nav.Link>
             <Nav.Link onClick={() => setActiveTab('status')} active={activeTab === 'status'}>System Status</Nav.Link>
+            <Nav.Link onClick={() => setActiveTab('dgp')} active={activeTab === 'dgp'}>DGP Assets</Nav.Link>
           </Nav>
           <Navbar.Collapse className="justify-content-end">
             <Navbar.Text className="me-3">
@@ -104,8 +106,10 @@ function App() {
               </Form>
             </Card.Footer>
           </Card>
-        ) : (
+        ) : activeTab === 'status' ? (
           <SystemStatus />
+        ) : (
+          <DGPList />
         )}
       </Container>
     </>

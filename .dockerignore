@@ -1,0 +1,17 @@
+node_modules
+npm-debug.log
+backend/node_modules
+frontend/node_modules
+frontend/dist
+.git
+.env
+*.gdoc
+*.gsheet
+*.pdf
+*.zip
+*.img
+models/
+storage/
+.coverage
+tmp/
+C:/Users/romel/.gemini/tmp/

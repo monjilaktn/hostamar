@@ -42,6 +42,9 @@ mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/hostamar')
 
 // --- ROUTES ---
 
+// DGP Asset Management
+app.use('/api/dgp', require('./routes/dgp'));
+
 // Health Check
 app.get('/health', (req, res) => {
   res.json({ 

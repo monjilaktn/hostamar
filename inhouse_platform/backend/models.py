@@ -1,4 +1,9 @@
 from django.db import models
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+# Note: We import inside the signal to avoid circular imports if needed, 
+# or use a clean import here.
+# from .notifications import send_push_notification
 
 class Lead(models.Model):
     STATUS_CHOICES = [
@@ -39,3 +44,18 @@ class Deployment(models.Model):
 
     def __str__(self):
         return f"{self.repo_name} - {self.status}"
+
+@receiver(post_save, sender=Lead)
+def lead_created_notification(sender, instance, created, **kwargs):
+    if created:
+        try:
+            # Lazy import to avoid AppRegistryNotReady issues
+            from .notifications import send_push_notification
+            send_push_notification(
+                title="New Business Lead!",
+                body=f"{instance.company_name} just signed up. Contact: {instance.contact_person}"
+            )
+        except ImportError:
+            print("Notification module not found or failed to load.")
+        except Exception as e:
+            print(f"Failed to trigger notification: {e}")

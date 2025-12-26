@@ -131,6 +131,7 @@ app.get('/system/status', auth, async (req, res) => {
     res.json({
       uptime: process.uptime(),
       status: 'Operational',
+      managed_assets: 100, // Reflecting the 100 DGP tokens
       performance: {
         cpu: Math.round(cpuUsage),
         memory: 100 - Math.round(memInfo.freeMemPercentage),

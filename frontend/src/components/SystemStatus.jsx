@@ -36,7 +36,8 @@ function SystemStatus() {
             <Card.Body>
               <Card.Title>System Status</Card.Title>
               <h2 className="text-success">{data.status}</h2>
-              <Card.Text>Uptime: {(data.uptime / 3600).toFixed(2)} hours</Card.Text>
+              <Card.Text className="mb-0">Uptime: {(data.uptime / 3600).toFixed(2)} hours</Card.Text>
+              <Card.Text><strong>Managed Assets: {data.managed_assets} DGP</strong></Card.Text>
             </Card.Body>
           </Card>
         </Col>

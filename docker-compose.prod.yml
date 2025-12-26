@@ -5,7 +5,7 @@ services:
   nginx:
     image: nginx:alpine
     ports:
-      - "80:80"
+      - "8080:80"
     volumes:
       - ./config_files:/etc/nginx/custom_config:ro
     command: /bin/sh -c "nginx -g 'daemon off;' -c /etc/nginx/custom_config/nginx.conf"

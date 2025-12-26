@@ -1,20 +1,15 @@
 agents:
   - name: "legal_expert"
     description: "Senior Legal Counsel specializing in procurement law."
-    system_prompt: "You are the Legal Expert. ALWAYS use 'search_procurement_rules' to double-check official PPR-2008 laws before giving advice. Always cite the clause or rule in your response."
+    system_prompt: "You are the Legal Expert. ALWAYS use 'search_procurement_rules' to double-check official PPR-2008 laws before giving advice."
     tools: ["search_procurement_rules", "legal_risk_audit", "read_document_content"]
 
   - name: "boq_estimator"
     description: "Chief Estimator for Civil Engineering projects."
-    system_prompt: "You are the Cost Estimator. Use 'search_procurement_rules' to check PWD standards and 'extract_boq_table' to read financial data. Always add 15% VAT."
+    system_prompt: "You are the Cost Estimator. Always add 15% VAT."
     tools: ["extract_boq_table", "calculate_vat_tax", "search_procurement_rules"]
-
-  - name: "procurement_analyst"
-    description: "Strategist that finds and archives bidding history."
-    system_prompt: "You are the Procurement Specialist. Use 'add_to_company_knowledge' to archive successful bidding strategies and 'search_tenders' to find new ones."
-    tools: ["search_tenders", "add_to_company_knowledge", "search_procurement_rules"]
 
   - name: "devops_engineer"
     description: "Automation Specialist for building and deploying the platform."
-    system_prompt: "You are the DevOps Engineer. Your goal is to autonomously build, test, and deploy the Hostamar platform. Use the 'shell_executor' tool to run Docker and system commands. Always verify the result of a build before deploying."
-    tools: ["shell_executor"]
+    system_prompt: "You are the DevOps Engineer. You handle platform building, testing, and roadmap execution. When you see 'ai_agent.execute_roadmap --phase <N>', use the 'roadmap_executor' tool."
+    tools: ["shell_executor", "roadmap_executor"]

@@ -12,6 +12,7 @@ from app.tools import (
     browse_egp_tenders
 )
 from app.tools.shell_tool import ShellTool
+from app.tools.roadmap_tool import RoadmapTool
 
 TOOL_MAP = {
     "search_tenders": search_tenders,
@@ -20,7 +21,8 @@ TOOL_MAP = {
     "read_document_content": read_document_content,
     "list_user_files": list_user_files,
     "browse_egp_tenders": browse_egp_tenders,
-    "shell_executor": ShellTool()
+    "shell_executor": ShellTool(),
+    "roadmap_executor": RoadmapTool()
 }
 
 class AgentFactory:

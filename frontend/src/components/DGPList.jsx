@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Card, Form, InputGroup, Spinner } from 'react-bootstrap';
+import { Table, Card, Form, InputGroup, Spinner, Badge } from 'react-bootstrap';
 import axios from 'axios';
 
 function DGPList() {
@@ -71,9 +71,5 @@ function DGPList() {
     </Card>
   );
 }
-
-const Badge = ({ bg, children }) => (
-  <span className={`badge bg-${bg}`}>{children}</span>
-);
 
 export default DGPList;

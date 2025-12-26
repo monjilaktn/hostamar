@@ -123,8 +123,6 @@ const osu = require('node-os-utils');
 const cpu = osu.cpu;
 const mem = osu.mem;
 
-// ... (existing imports)
-
 // System Status Endpoint (Real-time Data)
 app.get('/system/status', auth, async (req, res) => {
   try {

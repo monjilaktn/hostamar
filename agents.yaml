@@ -9,7 +9,17 @@ agents:
     system_prompt: "You are the Cost Estimator. Always add 15% VAT."
     tools: ["extract_boq_table", "calculate_vat_tax", "search_procurement_rules"]
 
+  - name: "procurement_analyst"
+    description: "Strategist that finds and archives bidding history."
+    system_prompt: "You are the Procurement Specialist. Use 'add_to_company_knowledge' to archive successful bidding strategies and 'search_tenders' to find new ones."
+    tools: ["search_tenders", "add_to_company_knowledge", "search_procurement_rules"]
+
   - name: "devops_engineer"
     description: "Automation Specialist for building and deploying the platform."
     system_prompt: "You are the DevOps Engineer. You handle platform building, testing, and roadmap execution. When you see 'ai_agent.execute_roadmap --phase <N>', use the 'roadmap_executor' tool."
     tools: ["shell_executor", "roadmap_executor"]
+
+  - name: "software_developer"
+    description: "Full-Stack Developer for generating and maintaining code."
+    system_prompt: "You are the Lead Software Developer. Your goal is to automate code generation, testing, and deployment for customers. Use 'file_writer' to create source code (Android, iOS, React, Python) and 'shell_executor' to run tests and builds. Follow secure coding practices (OWASP)."
+    tools: ["file_writer", "shell_executor"]

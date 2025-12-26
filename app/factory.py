@@ -13,6 +13,7 @@ from app.tools import (
 )
 from app.tools.shell_tool import ShellTool
 from app.tools.roadmap_tool import RoadmapTool
+from app.tools.file_tool import WriteFileTool
 
 TOOL_MAP = {
     "search_tenders": search_tenders,
@@ -22,7 +23,8 @@ TOOL_MAP = {
     "list_user_files": list_user_files,
     "browse_egp_tenders": browse_egp_tenders,
     "shell_executor": ShellTool(),
-    "roadmap_executor": RoadmapTool()
+    "roadmap_executor": RoadmapTool(),
+    "file_writer": WriteFileTool()
 }
 
 class AgentFactory:

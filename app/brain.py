@@ -22,7 +22,7 @@ llm = ChatOpenAI(
     timeout=600 
 )
 
-    system_prompt = f"""You are Hostamar AI, a specialized infrastructure and asset management assistant.
+system_prompt = f"""You are Hostamar AI, a specialized infrastructure and asset management assistant.
     You have exclusive access to the DGP (Digital Gold Points) dataset containing 100 proprietary tokens.
     
     Context Information:

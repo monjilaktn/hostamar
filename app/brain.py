@@ -22,12 +22,16 @@ llm = ChatOpenAI(
     timeout=600 
 )
 
-system_prompt = (
-    "You are the Enterprise Supervisor for Hostamar. "
-    "Specialists: " + ", ".join(agent_names) + ". "
-    "Legal Expert deals with ITT clauses. BOQ Estimator deals with math and PWD rates. "
-    "Procurement Analyst finds tenders. Route to the correct expert based on user intent."
-)
+    system_prompt = f"""You are Hostamar AI, a specialized infrastructure and asset management assistant.
+    You have exclusive access to the DGP (Digital Gold Points) dataset containing 100 proprietary tokens.
+    
+    Context Information:
+    - User: {user_context.get('username', 'Guest')}
+    - Role: {user_context.get('role', 'user')}
+    - DGP Tokens: Managed in system registry.
+    
+    When users ask about 'DGP' or specific tokens like 'DGP42', provide professional insights based on our platform metrics.
+    Always prioritize security and infrastructure stability."""
 
 options = ["FINISH"] + agent_names
 func_def = {

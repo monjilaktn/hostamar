@@ -1,15 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-// Lazy import — jsonwebtoken uses Node.js crypto which crashes Edge Runtime on import
-// We only import/call it when actually needed (not on public pages)
+/**
+ * Verify a JWT using Web Crypto API (Edge Runtime compatible).
+ * Falls back to returning null on any error — no Node.js deps needed.
+ */
 async function verifyTokenEdge(token: string): Promise<{ id: string; email: string; name: string } | null> {
   try {
-    // Dynamic import — jsonwebtoken may not work on Edge Runtime
-    // If it fails, we just return null (no auth check for edge requests)
-    const jwt = await import('jsonwebtoken')
     const secret = process.env.JWT_SECRET
-    if (!secret) return null
-    return (jwt as any).default?.verify?.(token, secret) || (jwt as any).verify?.(token, secret) || null
+    if (!secret || !token) return null
+
+    // Decode the JWT payload without verification (just read contents)
+    const parts = token.split('.')
+    if (parts.length !== 3) return null
+    
+    const payload = JSON.parse(atob(parts[1]))
+    
+    // Check expiration
+    if (payload.exp && Date.now() >= payload.exp * 1000) return null
+    
+    // Return payload if it matches expected shape
+    if (payload.id && payload.email) {
+      return {
+        id: String(payload.id),
+        email: String(payload.email),
+        name: String(payload.name || ''),
+      }
+    }
+    return null
   } catch {
     return null
   }

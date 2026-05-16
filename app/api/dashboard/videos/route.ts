@@ -3,8 +3,13 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-config'
 import prisma from '@/lib/prisma'
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url)
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1'))
+    const limit = Math.min(50, Math.max(1, parseInt(searchParams.get('limit') || '10')))
+    const skip = (page - 1) * limit
+
     const session = await getServerSession(authOptions)
     
     if (!session?.user?.email) {
@@ -19,12 +24,26 @@ export async function GET() {
       return NextResponse.json({ error: 'Customer not found' }, { status: 404 })
     }
 
-    const videos = await prisma.video.findMany({
-      where: { customerId: customer.id },
-      orderBy: { createdAt: 'desc' },
-    })
+    const [videos, videoCount] = await Promise.all([
+      prisma.video.findMany({
+        where: { customerId: customer.id },
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.video.count({ where: { customerId: customer.id } }),
+    ])
 
-    return NextResponse.json({ videos })
+    return NextResponse.json({
+      videos,
+      pagination: {
+        page,
+        limit,
+        total: videoCount,
+        totalPages: Math.ceil(videoCount / limit),
+        hasMore: skip + limit < videoCount,
+      },
+    })
   } catch (error) {
     console.error('Videos fetch error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

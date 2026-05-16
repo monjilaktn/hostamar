@@ -1,7 +1,7 @@
 import './globals.css'
 import { Inter, Noto_Sans_Bengali } from 'next/font/google'
 import { Providers } from './providers'
-import { Metadata } from 'next'
+import { Metadata, Viewport } from 'next'
 import { defaultSeo } from '@/lib/seo'
 import LanguageSwitcher from '@/components/LanguageSwitcher'
 import ThemeToggle from '@/components/ThemeToggle'
@@ -19,6 +19,19 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://hostamar.com'
 
 export const metadata: Metadata = {
   ...defaultSeo,
+  metadataBase: new URL(SITE_URL),
+  other: {
+    'color-scheme': 'light dark',
+  },
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#3b82f6' },
+    { media: '(prefers-color-scheme: dark)', color: '#1e293b' },
+  ],
 }
 
 const jsonLd = {
@@ -97,6 +110,9 @@ export default async function RootLayout({
   return (
     <html lang={locale} dir="ltr" className={isBengali ? notoBengali.variable : ''}>
       <head>
+        <meta charSet="utf-8" />
+        <meta name="referrer" content="strict-origin-when-cross-origin" />
+        <meta name="format-detection" content="telephone=no, address=no, email=no" />
         <link rel="canonical" href={SITE_URL} />
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#3b82f6" />
@@ -106,6 +122,8 @@ export default async function RootLayout({
         <meta property="og:site_name" content="Hostamar" />
         <meta property="og:locale" content={isBengali ? 'bn_BD' : 'en_US'} />
         <meta property="og:type" content="website" />
+        {/* Preconnect to critical origins for performance */}
+        <link rel="dns-prefetch" href={SITE_URL} />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

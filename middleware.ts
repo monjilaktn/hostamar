@@ -62,5 +62,6 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|manifest.json|opengraph-image).*)']
+  // Exclude all static assets from middleware entirely — never run auth checks on them
+  matcher: ['/((?!_next/static|_next/image|static/|favicon.ico|manifest.json|opengraph-image).*)']
 }

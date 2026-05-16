@@ -114,7 +114,7 @@ export async function generateVoiceOver(text: string, outputPath: string): Promi
 
   // Option 2: ElevenLabs (premium)
   if (process.env.ELEVENLABS_API_KEY) {
-    const { ElevenLabsClient } = await import('elevenlabs-node');
+    const { ElevenLabsClient } = await import('elevenlabs');
     const client = new ElevenLabsClient({
       apiKey: process.env.ELEVENLABS_API_KEY,
     });

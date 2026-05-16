@@ -1,0 +1,11 @@
+node_modules
+.next
+*.pyc
+__pycache__
+.env
+.env.local
+.env.production
+.git
+camofox/
+build.tar.gz
+next.tar.gz

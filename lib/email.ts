@@ -1,89 +1,82 @@
-import nodemailer from 'nodemailer';
+// Email service — uses Mailpit on remote Windows (open source SMTP)
+// Mailpit runs on 192.168.1.2:1025, Web UI at http://192.168.1.2:8025
+import nodemailer from "nodemailer";
 
-// Resend SMTP Configuration
-// Free tier: 100 emails/day
-// Get your API key at: https://resend.com/api-keys
-//
-// Sign up with monjilaktn@outlook.com (or your email)
-// Then create an API key in the dashboard
-const RESEND_API_KEY = process.env.RESEND_API_KEY || 're_xxxxxxxx';
+const SMTP_HOST = process.env.SMTP_HOST || "192.168.1.2";
+const SMTP_PORT = parseInt(process.env.SMTP_PORT || "1025");
+const SMTP_USER = process.env.SMTP_USER || "";
+const SMTP_PASS = process.env.SMTP_PASS || "";
+const FROM_EMAIL = process.env.FROM_EMAIL || "noreply@hostamar.com";
+const FROM_NAME = process.env.FROM_NAME || "Hostamar";
 
-const transporter = nodemailer.createTransport({
-  host: 'smtp.resend.com',
-  port: 465,
-  secure: true,
-  auth: {
-    user: 'resend',
-    pass: RESEND_API_KEY,
-  },
-});
+let transporter: nodemailer.Transporter | null = null;
+
+function getTransporter(): nodemailer.Transporter {
+  if (!transporter) {
+    transporter = nodemailer.createTransport({
+      host: SMTP_HOST,
+      port: SMTP_PORT,
+      secure: false,
+      auth: SMTP_USER ? { user: SMTP_USER, pass: SMTP_PASS } : undefined,
+      tls: { rejectUnauthorized: false },
+    });
+  }
+  return transporter;
+}
 
 export async function sendEmail({
   to,
   subject,
   html,
-  from = process.env.EMAIL_FROM || 'noreply@hostamar.com',
+  text,
 }: {
   to: string;
   subject: string;
   html: string;
-  from?: string;
-}) {
+  text?: string;
+}): Promise<boolean> {
   try {
-    const info = await transporter.sendMail({ from, to, subject, html });
-    console.log('Email sent:', info.messageId);
-    return { success: true, messageId: info.messageId };
-  } catch (error: any) {
-    console.error('Email send error:', error.message);
-    return { success: false, error: error.message };
+    const info = await getTransporter().sendMail({
+      from: `"${FROM_NAME}" <${FROM_EMAIL}>`,
+      to,
+      subject,
+      html,
+      text: text || html.replace(/<[^>]*>/g, ""),
+    });
+    console.log("Email sent:", info.messageId);
+    return true;
+  } catch (error) {
+    console.error("Email send failed:", error);
+    return false;
   }
 }
 
-// Email Templates (Bengali)
-export function getWelcomeEmail(name: string) {
-  return {
-    subject: 'Hostamar-এ স্বাগতম! 🎉',
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <div style="text-align: center; padding: 30px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px;">
-          <h1 style="color: white; margin: 0;">Hostamar</h1>
-        </div>
-        <div style="padding: 30px; background: #f9f9f9; border-radius: 0 0 10px 10px;">
-          <h2 style="color: #333;">স্বাগতম, ${name}! 👋</h2>
-          <p style="color: #666; line-height: 1.6;">
-            Hostamar-এ আপনার অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে। আপনি এখন AI দিয়ে ভিডিও তৈরি,
-            সম্পাদনা এবং সাবটাইটেল যুক্ত করতে পারবেন।
-          </p>
-          <p style="color: #666; line-height: 1.6;">
-            শুরু করতে আপনার ${3}টি ফ্রি ক্রেডিট দেওয়া হয়েছে।
-          </p>
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="https://hostamar.com/dashboard" 
-               style="background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-size: 16px;">
-              ড্যাশবোর্ডে যান →
-            </a>
-          </div>
-        </div>
+export async function sendWelcomeEmail(to: string, name: string): Promise<boolean> {
+  return sendEmail({
+    to,
+    subject: "স্বাগতম Hostamar এ! 🎉",
+    html: \`
+      <div style="font-family:sans-serif;max-width:600px;margin:0 auto;background:#0f172a;color:#e2e8f0;padding:40px;border-radius:12px">
+        <h1 style="color:#6366f1;margin:0 0 20px">স্বাগতম, \${name}! 👋</h1>
+        <p style="font-size:16px;line-height:1.6">Hostamar এ আপনার অ্যাকাউন্ট তৈরি হয়েছে। এখনই ভিডিও তৈরি শুরু করুন!</p>
+        <a href="https://hostamar.vercel.app/dashboard" style="display:inline-block;background:#6366f1;color:#fff;padding:12px 32px;border-radius:8px;text-decoration:none;margin:20px 0;font-size:16px">ড্যাশবোর্ডে যান →</a>
+        <p style="margin-top:30px;font-size:14px;color:#94a3b8">Hostamar — AI ভিডিও সাবটাইটেল, ডাবিং ও প্রসেসিং</p>
       </div>
-    `,
-  };
+    \`,
+  });
 }
 
-export function getResetPasswordEmail(name: string, resetUrl: string) {
-  return {
-    subject: 'পাসওয়ার্ড রিসেট - Hostamar',
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <h2>পাসওয়ার্ড রিসেট</h2>
-        <p>হ্যালো ${name},</p>
-        <p>আপনার পাসওয়ার্ড রিসেট করতে নিচের বাটনে ক্লিক করুন:</p>
-        <div style="text-align: center; margin: 30px 0;">
-          <a href="${resetUrl}" style="background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px;">
-            পাসওয়ার্ড রিসেট করুন
-          </a>
-        </div>
-        <p>এই লিঙ্ক ১ ঘন্টার জন্য বৈধ।</p>
+export async function sendPasswordResetEmail(to: string, name: string, resetUrl: string): Promise<boolean> {
+  return sendEmail({
+    to,
+    subject: "পাসওয়ার্ড রিসেট — Hostamar",
+    html: \`
+      <div style="font-family:sans-serif;max-width:600px;margin:0 auto;background:#0f172a;color:#e2e8f0;padding:40px;border-radius:12px">
+        <h1 style="color:#6366f1;margin:0 0 20px">পাসওয়ার্ড রিসেট</h1>
+        <p style="font-size:16px;line-height:1.6">হ্যালো \${name}, আপনার পাসওয়ার্ড রিসেট করতে নিচের বাটনে ক্লিক করুন:</p>
+        <a href="\${resetUrl}" style="display:inline-block;background:#ef4444;color:#fff;padding:12px 32px;border-radius:8px;text-decoration:none;margin:20px 0;font-size:16px">পাসওয়ার্ড রিসেট করুন</a>
+        <p style="font-size:14px;color:#94a3b8">এই লিংক ১ ঘন্টার জন্য বৈধ।</p>
       </div>
-    `,
-  };
+    \`,
+  });
 }

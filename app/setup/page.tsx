@@ -1,188 +1,227 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { CheckCircle, Copy, ExternalLink, Settings, Loader2 } from 'lucide-react'
+import { CheckCircle, Copy, ExternalLink, Server, Mail, Database, Shield, HardDrive, Cpu } from 'lucide-react'
+
+interface EnvField {
+  label: string
+  value: string
+  key: string
+  placeholder?: string
+}
 
 export default function SetupPage() {
-  const [copied, setCopied] = useState('')
-  const [loading, setLoading] = useState('')
+  const [copied, setCopied] = useState<string | null>(null)
+  const [fields, setFields] = useState<EnvField[]>([])
 
-  const copyToClipboard = (text: string, id: string) => {
-    navigator.clipboard.writeText(text)
-    setCopied(id)
-    setTimeout(() => setCopied(''), 3000)
+  const copyToClipboard = async (text: string, key: string) => {
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopied(key)
+      setTimeout(() => setCopied(null), 2000)
+    } catch {
+      // Fallback
+      const ta = document.createElement('textarea')
+      ta.value = text
+      document.body.appendChild(ta)
+      ta.select()
+      document.execCommand('copy')
+      document.body.removeChild(ta)
+      setCopied(key)
+      setTimeout(() => setCopied(null), 2000)
+    }
+  }
+
+  useEffect(() => {
+    setFields([
+      { label: 'SMTP Host', value: '192.168.1.2', key: 'SMTP_HOST' },
+      { label: 'SMTP Port', value: '1025', key: 'SMTP_PORT' },
+      { label: 'SMTP User', value: '', key: 'SMTP_USER', placeholder: 'empty (no auth for local)' },
+      { label: 'SMTP Pass', value: '', key: 'SMTP_PASS', placeholder: 'empty (no auth for local)' },
+      { label: 'From Email', value: 'noreply@hostamar.com', key: 'FROM_EMAIL' },
+      { label: 'From Name', value: 'Hostamar', key: 'FROM_NAME' },
+      { label: 'S3 Endpoint', value: 'http://192.168.1.2:9000', key: 'S3_ENDPOINT' },
+      { label: 'S3 Region', value: 'auto', key: 'S3_REGION' },
+      { label: 'S3 Access Key', value: 'minioadmin', key: 'S3_ACCESS_KEY' },
+      { label: 'S3 Secret Key', value: 'minioadmin', key: 'S3_SECRET_KEY' },
+      { label: 'S3 Bucket', value: 'hostamar', key: 'S3_BUCKET' },
+      { label: 'S3 Public URL', value: 'http://192.168.1.2:9000', key: 'S3_PUBLIC_URL' },
+      { label: 'DATABASE_URL', value: `postgresql://neondb_owner:luambAtuJXneMJgZm4V94HR5@ep-empty-firefly-apkx8hzh.c-7.us-east-1.aws.neon.tech/neondb?sslmode=require`, key: 'DATABASE_URL' },
+      { label: 'NEXTAUTH_SECRET', value: 'hostamar-super-secret-key-2026', key: 'NEXTAUTH_SECRET' },
+      { label: 'NEXTAUTH_URL', value: 'http://localhost:3000', key: 'NEXTAUTH_URL' },
+      { label: 'QUEUE_SECRET', value: 'hostamar-dev-secret', key: 'QUEUE_SECRET' },
+      { label: 'OLLAMA_BASE_URL', value: 'http://localhost:11435', key: 'OLLAMA_BASE_URL' },
+      { label: 'OLLAMA_VIDEO_MODEL', value: 'hermes3:latest', key: 'OLLAMA_VIDEO_MODEL' },
+    ])
+  }, [])
+
+  const copyAll = () => {
+    const lines = fields
+      .filter(f => f.value)
+      .map(f => `${f.key}=${f.value}`)
+      .join('\n')
+    copyToClipboard(lines, 'all')
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white py-12 px-4">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold mb-2">Hostamar Setup Guide 🚀</h1>
-        <p className="text-gray-400 mb-8">Complete these steps to go live with all features</p>
+    <div className="min-h-screen bg-gray-900 text-gray-100">
+      <div className="max-w-4xl mx-auto px-4 py-12">
+        {/* Header */}
+        <div className="text-center mb-12">
+          <h1 className="text-3xl font-bold mb-2">⚡ Hostamar Setup</h1>
+          <p className="text-gray-400">All self-hosted services — zero cloud dependency</p>
+        </div>
 
-        {/* Step 1: Resend */}
+        {/* Infrastructure Overview */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+          <div className="bg-gray-800 rounded-xl p-5 border border-gray-700">
+            <div className="flex items-center gap-3 mb-3">
+              <Server className="w-5 h-5 text-blue-400" />
+              <h3 className="font-semibold">Remote Machine</h3>
+            </div>
+            <p className="text-sm text-gray-400">192.168.1.2 — Windows DESKTOP-9KA03CQ</p>
+            <p className="text-sm text-gray-400">Hermes Agent v0.14.0 + Ollama</p>
+          </div>
+          <div className="bg-gray-800 rounded-xl p-5 border border-gray-700">
+            <div className="flex items-center gap-3 mb-3">
+              <Cpu className="w-5 h-5 text-purple-400" />
+              <h3 className="font-semibold">Compute</h3>
+            </div>
+            <p className="text-sm text-gray-400">Ollama: hermes3:latest + qwen3.5:9b + qwen3.6</p>
+            <p className="text-sm text-gray-400">Tunnel: localhost:11435 → remote Ollama</p>
+          </div>
+        </div>
+
+        {/* Step 1: Mailpit (Self-hosted SMTP) */}
         <div className="bg-gray-800 rounded-xl p-6 mb-4 border border-gray-700">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-sm font-bold">1</div>
-            <h2 className="text-xl font-semibold">SMTP Email (Resend)</h2>
-            <span className="text-xs bg-green-900 text-green-300 px-2 py-1 rounded-full">Free: 100/day</span>
+            <Mail className="w-5 h-5 text-blue-400" />
+            <h2 className="text-xl font-semibold">Mailpit — SMTP Server</h2>
+            <span className="text-xs bg-green-900 text-green-300 px-2 py-1 rounded-full">Self-hosted ✓</span>
           </div>
-          <ol className="space-y-2 text-gray-300 text-sm list-decimal ml-5">
-            <li>Go to <a href="https://resend.com" className="text-blue-400 underline">resend.com</a> → Sign up</li>
-            <li>Verify email → Dashboard → Create API key</li>
-            <li>Copy the key (starts with <code className="bg-gray-700 px-1 rounded">re_</code>)</li>
-          </ol>
-          <div className="mt-3 flex items-center gap-2">
-            <input readOnly value="re_" className="bg-gray-900 border border-gray-600 rounded px-3 py-2 text-sm flex-1" placeholder="re_xxxxxxxxxx" />
-            <button onClick={() => copyToClipboard('re_', 'resend')} className="p-2 hover:bg-gray-700 rounded">
-              {copied === 'resend' ? <CheckCircle className="w-5 h-5 text-green-400" /> : <Copy className="w-5 h-5 text-gray-400" />}
-            </button>
+          <div className="grid grid-cols-2 gap-3 text-sm text-gray-300 mb-3">
+            <div><span className="text-gray-500">SMTP:</span> 192.168.1.2:1025</div>
+            <div><span className="text-gray-500">Web UI:</span> http://192.168.1.2:8025</div>
+            <div><span className="text-gray-500">Auth:</span> None (local network)</div>
+            <div><span className="text-gray-500">Status:</span> ✅ Running (PID 21336)</div>
           </div>
-          <p className="text-xs text-gray-500 mt-2">Add to .env.local: <code className="bg-gray-700 px-1 rounded">RESEND_API_KEY=re_xxxxxxxxx</code></p>
+          <p className="text-xs text-gray-500 mt-2">Replaces Resend — 100% free, unlimited emails on local network</p>
         </div>
 
-        {/* Step 2: Google OAuth */}
+        {/* Step 2: MinIO (Self-hosted S3) */}
         <div className="bg-gray-800 rounded-xl p-6 mb-4 border border-gray-700">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-8 h-8 rounded-full bg-red-600 flex items-center justify-center text-sm font-bold">2</div>
-            <h2 className="text-xl font-semibold">Google Social Login</h2>
-            <span className="text-xs bg-green-900 text-green-300 px-2 py-1 rounded-full">Free</span>
+            <div className="w-8 h-8 rounded-full bg-orange-600 flex items-center justify-center text-sm font-bold">2</div>
+            <HardDrive className="w-5 h-5 text-orange-400" />
+            <h2 className="text-xl font-semibold">MinIO — S3 Storage</h2>
+            <span className="text-xs bg-green-900 text-green-300 px-2 py-1 rounded-full">Self-hosted ✓</span>
           </div>
-          <ol className="space-y-2 text-gray-300 text-sm list-decimal ml-5">
-            <li>Go to <a href="https://console.cloud.google.com/apis/credentials" className="text-blue-400 underline">Google Cloud Console</a></li>
-            <li>Create project → "OAuth consent screen" → External</li>
-            <li>Add <code className="bg-gray-700 px-1 rounded">https://hostamar.com</code> as Authorized domain</li>
-            <li>"Credentials" → Create OAuth 2.0 Client ID → Web application</li>
-            <li>Add redirect URI: <code className="bg-gray-700 px-1 rounded">https://hostamar.com/api/auth/callback/google</code></li>
-            <li>Copy Client ID and Client Secret</li>
-          </ol>
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            <input readOnly placeholder="Client ID" className="bg-gray-900 border border-gray-600 rounded px-3 py-2 text-sm" />
-            <input readOnly placeholder="Client Secret" className="bg-gray-900 border border-gray-600 rounded px-3 py-2 text-sm" />
+          <div className="grid grid-cols-2 gap-3 text-sm text-gray-300 mb-3">
+            <div><span className="text-gray-500">API:</span> http://192.168.1.2:9000</div>
+            <div><span className="text-gray-500">Console:</span> http://192.168.1.2:9001</div>
+            <div><span className="text-gray-500">Access Key:</span> minioadmin</div>
+            <div><span className="text-gray-500">Secret Key:</span> minioadmin</div>
           </div>
-          <p className="text-xs text-gray-500 mt-2">Add to .env.local: <code className="bg-gray-700 px-1 rounded">GOOGLE_CLIENT_ID=xxx</code> and <code className="bg-gray-700 px-1 rounded">GOOGLE_CLIENT_SECRET=xxx</code></p>
+          <p className="text-xs text-gray-500 mt-2">Replaces Uploadthing — unlimited storage on your machine</p>
         </div>
 
-        {/* Step 3: Facebook OAuth */}
+        {/* Step 3: Auth (Credentials only) */}
         <div className="bg-gray-800 rounded-xl p-6 mb-4 border border-gray-700">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-8 h-8 rounded-full bg-blue-700 flex items-center justify-center text-sm font-bold">3</div>
-            <h2 className="text-xl font-semibold">Facebook Social Login</h2>
-            <span className="text-xs bg-green-900 text-green-300 px-2 py-1 rounded-full">Free</span>
+            <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center text-sm font-bold">3</div>
+            <Shield className="w-5 h-5 text-green-400" />
+            <h2 className="text-xl font-semibold">NextAuth — Credentials Only</h2>
+            <span className="text-xs bg-green-900 text-green-300 px-2 py-1 rounded-full">Free ✓</span>
           </div>
-          <ol className="space-y-2 text-gray-300 text-sm list-decimal ml-5">
-            <li>Go to <a href="https://developers.facebook.com/apps" className="text-blue-400 underline">Facebook Developers</a></li>
-            <li>Create app → "Authenticate and request data from users with Facebook Login"</li>
-            <li>Settings → Basic → Copy App ID and App Secret</li>
-            <li>Add redirect URIs: <code className="bg-gray-700 px-1 rounded">https://hostamar.com/api/auth/callback/facebook</code></li>
-          </ol>
-          <p className="text-xs text-gray-500 mt-2">Add to .env.local: <code className="bg-gray-700 px-1 rounded">FACEBOOK_CLIENT_ID=xxx</code> and <code className="bg-gray-700 px-1 rounded">FACEBOOK_CLIENT_SECRET=xxx</code></p>
+          <p className="text-sm text-gray-300 mb-3">Email + password auth. No Google/Facebook. No third-party dependency.</p>
+          <p className="text-xs text-gray-500">Already configured — just add NEXTAUTH_SECRET to env</p>
         </div>
 
-        {/* Step 4: Uploadthing */}
+        {/* Step 4: Queue & Cron */}
         <div className="bg-gray-800 rounded-xl p-6 mb-4 border border-gray-700">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center text-sm font-bold">4</div>
-            <h2 className="text-xl font-semibold">Uploadthing (File Storage)</h2>
-            <span className="text-xs bg-green-900 text-green-300 px-2 py-1 rounded-full">Free: 2GB</span>
+            <div className="w-8 h-8 rounded-full bg-yellow-600 flex items-center justify-center text-sm font-bold">4</div>
+            <Database className="w-5 h-5 text-yellow-400" />
+            <h2 className="text-xl font-semibold">Background Queue</h2>
+            <span className="text-xs bg-green-900 text-green-300 px-2 py-1 rounded-full">Running ✓</span>
           </div>
-          <ol className="space-y-2 text-gray-300 text-sm list-decimal ml-5">
-            <li>Go to <a href="https://uploadthing.com" className="text-blue-400 underline">uploadthing.com</a> → Sign up (GitHub)</li>
-            <li>Dashboard → Create app → "hostamar"</li>
-            <li>Copy API keys</li>
-          </ol>
-          <p className="text-xs text-gray-500 mt-2">Add to .env.local: <code className="bg-gray-700 px-1 rounded">UPLOADTHING_SECRET=sk_live_xxx</code> and <code className="bg-gray-700 px-1 rounded">UPLOADTHING_APP_ID=xxx</code></p>
+          <p className="text-sm text-gray-300 mb-3">Video rendering queue processes every 5 minutes via cron.</p>
+          <div className="text-xs text-gray-400 space-y-1">
+            <p>• Queue: Prisma DB-backed VideoQueue model</p>
+            <p>• Render: Ollama (hermes3) + Remotion</p>
+            <p>• Cron: video-render-queue (every 5m)</p>
+            <p>• Tunnel: remote-ollama-tunnel (every 30m keepalive)</p>
+          </div>
         </div>
 
-        {/* Step 5: Vercel */}
+        {/* Step 5: Environment Variables */}
         <div className="bg-gray-800 rounded-xl p-6 mb-4 border border-gray-700">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-8 h-8 rounded-full bg-black flex items-center justify-center text-sm font-bold">5</div>
-            <h2 className="text-xl font-semibold">Vercel Environment Variables</h2>
-            <span className="text-xs bg-green-900 text-green-300 px-2 py-1 rounded-full">Auto</span>
+            <div className="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center text-sm font-bold">5</div>
+            <Database className="w-5 h-5 text-purple-400" />
+            <h2 className="text-xl font-semibold">Environment Variables</h2>
+            <span className="text-xs bg-green-900 text-green-300 px-2 py-1 rounded-full">Ready ✓</span>
           </div>
-          <ol className="space-y-2 text-gray-300 text-sm list-decimal ml-5">
-            <li>Go to <a href="https://vercel.com/monjilaktn/hostamar/settings/environment" className="text-blue-400 underline">Vercel Dashboard → Settings → Environment Variables</a></li>
-            <li>Add these variables (from .env.local):</li>
-          </ol>
-          <pre className="mt-3 bg-gray-900 p-4 rounded-lg text-xs text-green-400 overflow-x-auto">
-DATABASE_URL={process.env.NEXT_PUBLIC_SITE_URL ? 'postgresql://...' : 'postgresql://neondb_owner:luambAtuJXneMJgZm4V94HR5@ep-empty-firefly-apkx8hzh.c-7.us-east-1.aws.neon.tech/neondb?sslmode=require'}
-JWT_SECRET=Xe/4ias0GKKUv8zhEyctMRk+cbuPwlmWEXveKK1pfRk=
-NEXTAUTH_SECRET=KW7zFeRJSmW0FCukzyOy06CE3zy/8h4YX+KgwwVWFBA=
-NEXTAUTH_URL=https://hostamar.com
-RESEND_API_KEY=re_xxxxx          ← after Resend signup
-GOOGLE_CLIENT_ID=xxxx.apps.googleusercontent.com  ← after Google setup
-GOOGLE_CLIENT_SECRET=xxxx        ← after Google setup
-FACEBOOK_CLIENT_ID=xxxx          ← after Facebook setup
-FACEBOOK_CLIENT_SECRET=xxxx      ← after Facebook setup
-UPLOADTHING_SECRET=sk_live_xxx   ← after Uploadthing setup
-UPLOADTHING_APP_ID=xxx           ← after Uploadthing setup
-          </pre>
+
+          {/* Copy All Button */}
+          <button
+            onClick={copyAll}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg mb-4 flex items-center justify-center gap-2 transition-colors"
+          >
+            {copied === 'all' ? (
+              <><CheckCircle className="w-5 h-5" /> Copied!</>
+            ) : (
+              <><Copy className="w-5 h-5" /> Copy All to Clipboard</>
+            )}
+          </button>
+
+          {/* Field Table */}
+          <div className="space-y-2">
+            {fields.map((field) => (
+              <div key={field.key} className="flex items-center justify-between bg-gray-900 p-3 rounded-lg">
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs text-gray-500 font-mono">{field.key}</div>
+                  <div className="text-sm text-green-400 font-mono truncate">{field.value || field.placeholder || '(empty)'}</div>
+                </div>
+                <button
+                  onClick={() => copyToClipboard(field.value, field.key)}
+                  className="ml-3 p-2 hover:bg-gray-700 rounded-lg transition-colors flex-shrink-0"
+                  title="Copy value"
+                >
+                  {copied === field.key ? (
+                    <CheckCircle className="w-4 h-4 text-green-400" />
+                  ) : (
+                    <Copy className="w-4 h-4 text-gray-400" />
+                  )}
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Done */}
         <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center text-sm font-bold">✓</div>
-            <h2 className="text-xl font-semibold">Next Steps After Setup</h2>
+            <h2 className="text-xl font-semibold">All Set — No Cloud Dependency</h2>
           </div>
           <ul className="text-gray-300 text-sm space-y-2">
-            <li className="flex items-start gap-2">
-              <span className="text-yellow-400 mt-0.5">→</span>
-              Push your 400K Facebook group: share hostamar.com with referral link
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-yellow-400 mt-0.5">→</span>
-              Monitor earnings: each 10-credit pack = ৳299 via bKash
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-yellow-400 mt-0.5">→</span>
-              Check Vercel dashboard for usage limits
-            </li>
+            <li>✅ <strong>SMTP:</strong> Mailpit on remote Windows — unlimited</li>
+            <li>✅ <strong>Storage:</strong> MinIO on remote Windows — unlimited</li>
+            <li>✅ <strong>Auth:</strong> NextAuth credentials — 100% free</li>
+            <li>✅ <strong>Queue:</strong> DB-backed + cron — runs locally</li>
+            <li>✅ <strong>Compute:</strong> Ollama on remote — free inference</li>
+            <li>✅ <strong>DB:</strong> Neon free tier — 500MB</li>
+            <li>✅ <strong>Hosting:</strong> Vercel free tier — auto-deploy</li>
           </ul>
-        </div>
-
-        {/* Quick copy */}
-        <div className="mt-8 text-center">
-          <button
-            onClick={() => {
-              const text = `# Hostamar .env.local Template
-DATABASE_URL=postgresql://neondb_owner:luambAtuJXneMJgZm4V94HR5@ep-empty-firefly-apkx8hzh.c-7.us-east-1.aws.neon.tech/neondb?sslmode=require
-JWT_SECRET=Xe/4ias0GKKUv8zhEyctMRk+cbuPwlmWEXveKK1pfRk=
-NEXTAUTH_SECRET=KW7zFeRJSmW0FCukzyOy06CE3zy/8h4YX+KgwwVWFBA=
-NEXTAUTH_URL=https://hostamar.com
-NEXT_PUBLIC_SITE_URL=https://hostamar.com
-
-# SMTP - Resend (get free key at resend.com)
-SMTP_HOST=smtp.resend.com
-SMTP_PORT=465
-SMTP_USER=resend
-SMTP_PASS=re_xxx
-EMAIL_FROM=noreply@hostamar.com
-FROM_EMAIL=noreply@hostamar.com
-
-# OAuth - Google (console.cloud.google.com)
-GOOGLE_CLIENT_ID=xxx.apps.googleusercontent.com
-GOOGLE_CLIENT_SECRET=xxx
-
-# OAuth - Facebook (developers.facebook.com)
-FACEBOOK_CLIENT_ID=xxx
-FACEBOOK_CLIENT_SECRET=xxx
-
-# File Upload - Uploadthing (uploadthing.com)
-UPLOADTHING_SECRET=sk_live_xxx
-UPLOADTHING_APP_ID=xxx
-
-# bKash Payment
-BKASH_NUMBER=01822417463`;
-              navigator.clipboard.writeText(text);
-              setCopied('all');
-              setTimeout(() => setCopied(''), 3000);
-            }}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition"
+          <Link
+            href="/dashboard"
+            className="inline-block mt-6 bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg transition-colors"
           >
-            {copied === 'all' ? '✓ Copied!' : '📋 Copy Complete .env Template'}
-          </button>
+            Go to Dashboard →
+          </Link>
         </div>
       </div>
     </div>

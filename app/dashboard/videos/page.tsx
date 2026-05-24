@@ -37,7 +37,7 @@ export default function VideosPage() {
   })
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this video?')) return
+    if (!confirm('এই ভিডিওটি মুছে ফেলবেন?')) return
     try {
       const res = await fetch(`/api/dashboard/videos?id=${id}`, { method: 'DELETE' })
       if (res.ok) setVideos(v => v.filter(x => x.id !== id))
@@ -54,12 +54,12 @@ export default function VideosPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-white">My Videos</h1>
+        <h1 className="text-2xl font-bold text-white">আমার ভিডিও</h1>
         <Link
           href="/editor"
           className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition"
         >
-          + New Video
+          + নতুন ভিডিও
         </Link>
       </div>
 
@@ -71,7 +71,7 @@ export default function VideosPage() {
             type="text"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Search videos..."
+            placeholder="ভিডিও খুঁজুন..."
             className="w-full pl-9 pr-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
@@ -80,11 +80,11 @@ export default function VideosPage() {
           onChange={e => setStatusFilter(e.target.value)}
           className="bg-white/5 border border-white/10 rounded-lg text-sm text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
-          <option value="all">All Status</option>
-          <option value="completed">Completed</option>
-          <option value="processing">Processing</option>
-          <option value="pending">Pending</option>
-          <option value="failed">Failed</option>
+          <option value="all">সব স্ট্যাটাস</option>
+          <option value="completed">সম্পন্ন</option>
+          <option value="processing">প্রক্রিয়াধীন</option>
+          <option value="pending">বিচারাধীন</option>
+          <option value="failed">ব্যর্থ</option>
         </select>
       </div>
 
@@ -93,25 +93,25 @@ export default function VideosPage() {
         <table className="w-full">
           <thead>
             <tr className="border-b border-white/10 bg-white/5">
-              <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase">Title</th>
-              <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase">Status</th>
-              <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase">Duration</th>
-              <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase">Views</th>
-              <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase">Created</th>
-              <th className="text-right px-4 py-3 text-xs font-medium text-gray-400 uppercase">Actions</th>
+              <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase">শিরোনাম</th>
+              <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase">স্ট্যাটাস</th>
+              <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase">সময়কাল</th>
+              <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase">দর্শন</th>
+              <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase">তৈরির তারিখ</th>
+              <th className="text-right px-4 py-3 text-xs font-medium text-gray-400 uppercase">অ্যাকশন</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
                 <td colSpan={6} className="text-center py-12 text-gray-500">
-                  Loading...
+                  লোড হচ্ছে...
                 </td>
               </tr>
             ) : filtered.length === 0 ? (
               <tr>
                 <td colSpan={6} className="text-center py-12 text-gray-500">
-                  {search ? 'No videos match your search.' : 'No videos yet. Create one!'}
+                  {search ? 'আপনার অনুসন্ধানের সাথে মেলে এমন কোনো ভিডিও নেই।' : 'এখনো কোনো ভিডিও নেই। একটি তৈরি করুন!'}
                 </td>
               </tr>
             ) : (

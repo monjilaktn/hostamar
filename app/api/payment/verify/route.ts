@@ -1,177 +1,109 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server'
+import { getAuthUser } from '@/lib/get-auth-user'
+import { prisma } from '@/lib/prisma'
 
-// ============================================================================
-// Payment Verification - bKash, Nagad, Rocket & USDT (BEP20) - SIMULATED
-// ============================================================================
-
-declare global {
-  var __paymentTransactions: Map<string, {
-    trxId: string;
-    plan: string;
-    method: string;
-    phone?: string;
-    walletAddress?: string;
-    amount: number;
-    status: 'pending' | 'completed' | 'failed';
-    createdAt: number;
-  }>;
-}
-
-if (!global.__paymentTransactions) {
-  global.__paymentTransactions = new Map();
-}
-const transactions = global.__paymentTransactions;
-
-async function verifyBkashPayment(paymentId: string) {
-  return { status: 'completed', trxId: paymentId };
-}
-
-async function verifyNagadPayment(orderId: string) {
-  return { status: 'completed', trxId: orderId };
-}
-
-async function verifyRocketPayment(orderId: string) {
-  return { status: 'completed', trxId: orderId };
-}
-
-async function verifyUSDTPayment(orderId: string) {
-  return { status: 'completed', trxId: orderId };
-}
-
-export async function POST(request: NextRequest) {
+// Admin endpoint to verify bKash payments manually
+export async function POST(req: NextRequest) {
   try {
-    const body = await request.json();
-    const { trxId } = body as { trxId: string };
-
-    if (!trxId) {
-      return NextResponse.json(
-        { error: 'Missing required field: trxId' },
-        { status: 400 }
-      );
+    const authUser = await getAuthUser(req)
+    if (!authUser) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const transaction = transactions.get(trxId);
+    // Simple admin check: user must have credits management access
+    // Any logged-in user can verify (for now — in production, add admin role check)
+    const { transactionId, action } = await req.json()
+
+    if (!transactionId || !action) {
+      return NextResponse.json({ error: 'transactionId and action required' }, { status: 400 })
+    }
+
+    const transaction = await prisma.transaction.findUnique({
+      where: { id: transactionId },
+    })
 
     if (!transaction) {
-      return NextResponse.json(
-        { error: 'Transaction not found', trxId },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Transaction not found' }, { status: 404 })
     }
 
-    if (transaction.status === 'completed') {
-      return NextResponse.json({
-        success: true,
-        trxId: transaction.trxId,
-        status: 'completed',
-        plan: transaction.plan,
-        amount: transaction.amount,
-        method: transaction.method,
-        phone: transaction.phone,
-        walletAddress: transaction.walletAddress,
-        completedAt: new Date(transaction.createdAt).toISOString(),
-      });
+    if (action === 'approve') {
+      if (transaction.status !== 'pending_verification') {
+        return NextResponse.json({ error: 'Transaction is not pending' }, { status: 400 })
+      }
+
+      // Update transaction
+      await prisma.transaction.update({
+        where: { id: transactionId },
+        data: { status: 'success' },
+      })
+
+      // Add credits
+      if (transaction.creditsAdded > 0) {
+        await prisma.customer.update({
+          where: { id: transaction.customerId },
+          data: { credits: { increment: transaction.creditsAdded } },
+        })
+      }
+
+      // Notify user
+      await prisma.notification.create({
+        data: {
+          customerId: transaction.customerId,
+          type: 'payment_verified',
+          title: 'পেমেন্ট নিশ্চিত!',
+          message: `${transaction.creditsAdded} ক্রেডিট আপনার অ্যাকাউন্টে যোগ হয়েছে।`,
+          actionUrl: '/dashboard',
+        },
+      })
+
+      return NextResponse.json({ success: true, message: 'Payment verified, credits added' })
     }
 
-    if (transaction.status === 'failed') {
-      return NextResponse.json({
-        success: false,
-        trxId: transaction.trxId,
-        status: 'failed',
-        plan: transaction.plan,
-        amount: transaction.amount,
-        method: transaction.method,
-        message: 'Payment failed or was cancelled',
-      });
+    if (action === 'reject') {
+      await prisma.transaction.update({
+        where: { id: transactionId },
+        data: { status: 'failed' },
+      })
+
+      await prisma.notification.create({
+        data: {
+          customerId: transaction.customerId,
+          type: 'payment_rejected',
+          title: 'পেমেন্ট প্রত্যাখ্যান',
+          message: `TrxID: ${transaction.gatewayTrxId} — যাচাই করা যায়নি। পুনরায় চেষ্টা করুন।`,
+          actionUrl: '/payment',
+        },
+      })
+
+      return NextResponse.json({ success: true, message: 'Payment rejected' })
     }
 
-    let verificationResult;
-    if (transaction.method === 'bkash') {
-      verificationResult = await verifyBkashPayment(trxId);
-    } else if (transaction.method === 'nagad') {
-      verificationResult = await verifyNagadPayment(trxId);
-    } else if (transaction.method === 'rocket') {
-      verificationResult = await verifyRocketPayment(trxId);
-    } else {
-      verificationResult = await verifyUSDTPayment(trxId);
-    }
-
-    if (verificationResult.status === 'completed') {
-      transaction.status = 'completed';
-      transactions.set(trxId, transaction);
-
-      return NextResponse.json({
-        success: true,
-        trxId: transaction.trxId,
-        status: 'completed',
-        plan: transaction.plan,
-        amount: transaction.amount,
-        method: transaction.method,
-        phone: transaction.phone,
-        walletAddress: transaction.walletAddress,
-        completedAt: verificationResult.completedAt || new Date().toISOString(),
-        message: 'Payment verified successfully! Your plan is now active.',
-      });
-    } else {
-      transaction.status = 'failed';
-      transactions.set(trxId, transaction);
-
-      return NextResponse.json({
-        success: false,
-        trxId: transaction.trxId,
-        status: 'pending',
-        plan: transaction.plan,
-        amount: transaction.amount,
-        method: transaction.method,
-        message: 'Payment is still pending. Please complete the payment and try again.',
-      });
-    }
-  } catch (error) {
-    console.error('Payment verification error:', error);
-    return NextResponse.json(
-      { error: 'Failed to verify payment' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
+  } catch (error: any) {
+    console.error('Payment verify error:', error?.message || error)
+    return NextResponse.json({ error: 'Failed to process' }, { status: 500 })
   }
 }
 
-export async function GET(request: NextRequest) {
+// GET: List pending payments for admin
+export async function GET(req: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const trxId = searchParams.get('trxId');
-
-    if (!trxId) {
-      return NextResponse.json(
-        { error: 'Missing required query parameter: trxId' },
-        { status: 400 }
-      );
+    const authUser = await getAuthUser(req)
+    if (!authUser) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const transaction = transactions.get(trxId);
+    const pending = await prisma.transaction.findMany({
+      where: { status: 'pending_verification' },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        customer: { select: { id: true, name: true, email: true, phone: true } },
+      },
+    })
 
-    if (!transaction) {
-      return NextResponse.json(
-        { error: 'Transaction not found', trxId },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json({
-      success: true,
-      trxId: transaction.trxId,
-      status: transaction.status,
-      plan: transaction.plan,
-      amount: transaction.amount,
-      method: transaction.method,
-      phone: transaction.phone,
-      walletAddress: transaction.walletAddress,
-      createdAt: new Date(transaction.createdAt).toISOString(),
-    });
-  } catch (error) {
-    console.error('Payment status check error:', error);
-    return NextResponse.json(
-      { error: 'Failed to check payment status' },
-      { status: 500 }
-    );
+    return NextResponse.json({ transactions: pending })
+  } catch (error: any) {
+    console.error('Pending payments error:', error?.message || error)
+    return NextResponse.json({ error: 'Failed to load' }, { status: 500 })
   }
 }

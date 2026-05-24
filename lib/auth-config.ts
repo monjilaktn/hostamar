@@ -1,55 +1,29 @@
-import type { NextAuthOptions } from 'next-auth'
+import NextAuth from 'next-auth'
+import GoogleProvider from 'next-auth/providers/google'
+import FacebookProvider from 'next-auth/providers/facebook'
 import CredentialsProvider from 'next-auth/providers/credentials'
+import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
-import { prisma } from './prisma'
 
-export const authOptions: NextAuthOptions = {
-  secret: process.env.NEXTAUTH_SECRET,
-  
-  session: {
-    strategy: 'jwt',
-    maxAge: 60 * 60 * 24 * 7,
-    updateAge: 60 * 60 * 24,
-  },
+const GOOGLE_ID = process.env.GOOGLE_CLIENT_ID || ''
+const GOOGLE_SECRET = process.env.GOOGLE_CLIENT_SECRET || ''
+const FB_ID = process.env.FACEBOOK_CLIENT_ID || ''
+const FB_SECRET = process.env.FACEBOOK_CLIENT_SECRET || ''
 
-  cookies: {
-    sessionToken: {
-      name: `next-auth.session-token`,
-      options: {
-        httpOnly: true,
-        sameSite: 'strict',
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 60 * 60 * 24 * 7,
-        path: '/',
-      },
-    },
-    callbackUrl: {
-      name: `next-auth.callback-url`,
-      options: {
-        httpOnly: true,
-        sameSite: 'strict',
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 60 * 60 * 24 * 7,
-        path: '/',
-      },
-    },
-    csrfToken: {
-      name: `next-auth.csrf-token`,
-      options: {
-        httpOnly: false,
-        sameSite: 'strict',
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 60 * 60 * 24 * 7,
-        path: '/',
-      },
-    },
-  },
-
-  jwt: {
-    maxAge: 60 * 60 * 24 * 7,
-  },
-
+export const authOptions = {
   providers: [
+    ...(GOOGLE_ID && GOOGLE_SECRET ? [
+      GoogleProvider({
+        clientId: GOOGLE_ID,
+        clientSecret: GOOGLE_SECRET,
+      }),
+    ] : []),
+    ...(FB_ID && FB_SECRET ? [
+      FacebookProvider({
+        clientId: FB_ID,
+        clientSecret: FB_SECRET,
+      }),
+    ] : []),
     CredentialsProvider({
       name: 'credentials',
       credentials: {
@@ -57,53 +31,62 @@ export const authOptions: NextAuthOptions = {
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          return null
-        }
+        if (!credentials?.email || !credentials?.password) return null
 
-        const user = await prisma.customer.findUnique({
-          where: { email: credentials.email as string },
+        const customer = await prisma.customer.findUnique({
+          where: { email: credentials.email },
         })
 
-        if (!user || !user.password) {
-          return null
-        }
+        if (!customer) return null
 
-        const isValid = await bcrypt.compare(credentials.password as string, user.password)
-
-        if (!isValid) {
-          return null
-        }
+        const valid = await bcrypt.compare(credentials.password, customer.password)
+        if (!valid) return null
 
         return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
+          id: customer.id,
+          email: customer.email,
+          name: customer.name,
         }
       },
     }),
   ],
-
+  session: {
+    strategy: 'jwt' as const,
+  },
+  pages: {
+    signIn: '/login',
+  },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, account }: any) {
       if (user) {
         token.id = user.id
         token.email = user.email
-        token.name = user.name
+      }
+      // Handle OAuth accounts — create user if doesn't exist
+      if (account?.provider === 'google' || account?.provider === 'facebook') {
+        const email = token.email
+        if (email) {
+          const existing = await prisma.customer.findUnique({ where: { email } })
+          if (!existing) {
+            await prisma.customer.create({
+              data: {
+                email,
+                name: token.name || email.split('@')[0],
+                password: '', // OAuth users have no password
+                credits: 3,
+              },
+            })
+          }
+        }
       }
       return token
     },
-    async session({ session, token }) {
-      if (token && session.user) {
-        (session.user as any).id = token.id as string
-        session.user.email = token.email as string
-        session.user.name = token.name as string
+    async session({ session, token }: any) {
+      if (session.user) {
+        session.user.id = token.id as string
       }
       return session
     },
   },
-
-  pages: {
-    signIn: '/login',
-  },
+  secret: process.env.NEXTAUTH_SECRET,
 }

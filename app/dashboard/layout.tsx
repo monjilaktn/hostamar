@@ -19,7 +19,9 @@ import {
   Search,
   MessageSquare,
   PlayCircle,
-  BarChart3
+  BarChart3,
+  Gift,
+  BookOpen
 } from 'lucide-react'
 
 const navItems = [
@@ -31,8 +33,10 @@ const navItems = [
   { href: '/search', icon: Search, label: 'Search' },
   { href: '/ai-chat', icon: MessageSquare, label: 'AI Chat' },
   { href: '/previews', icon: PlayCircle, label: 'Previews' },
+  { href: '/referral', icon: Gift, label: 'Refer & Earn' },
   { href: '/dashboard/services', icon: Server, label: 'Services' },
   { href: '/payment', icon: CreditCard, label: 'Buy Credits' },
+  { href: '/blog', icon: BookOpen, label: 'Blog' },
   { href: '/dashboard/settings', icon: Settings, label: 'Settings' },
 ]
 

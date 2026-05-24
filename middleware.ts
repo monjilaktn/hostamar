@@ -8,8 +8,8 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Public paths — no auth needed
-  const publicPaths = ['/', '/login', '/signup', '/pricing', '/about', '/contact', '/privacy', '/terms', '/blog']
-  const publicApiPaths = ['/api/auth/login', '/api/auth/register', '/api/health', '/api/auth/signup']
+  const publicPaths = ['/', '/login', '/signup', '/pricing', '/about', '/contact', '/privacy', '/terms', '/blog', '/payment/success', '/payment/fail', '/payment/cancel']
+  const publicApiPaths = ['/api/auth/login', '/api/auth/register', '/api/health', '/api/auth/signup', '/api/payment/ipn']
   
   for (const p of publicPaths) {
     if (pathname === p || pathname.startsWith(p + '/')) {

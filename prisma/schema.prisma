@@ -24,6 +24,7 @@ model Customer {
   referredBy   String?
   referralBonus Float?  @default(0)
   balance       Float?  @default(0)
+  credits       Int     @default(0)
 
   // Relations
   business      Business?
@@ -32,6 +33,7 @@ model Customer {
   services      Service[]
   payments      Payment[]
   orders        Order[]
+  transactions  Transaction[]
   notifications    Notification[]
   leads         Lead[]
   referralsMade    Referral[]   @relation("ReferrerReferrals")
@@ -273,6 +275,35 @@ model Order {
   @@index([createdAt])
 }
 
+// Transaction model for SSLCOMMERZ / payment gateway transactions
+model Transaction {
+  id            String   @id @default(cuid())
+  customerId    String
+  customer      Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  amount        Float
+  currency      String   @default("BDT")
+  status        String   @default("pending") // pending, success, failed, canceled
+  gateway       String   @default("sslcommerz")
+  gatewayTrxId  String?  @unique
+  sessionKey    String?
+  videoPackage  String?
+  creditsAdded  Int      @default(0)
+
+  cardType      String?
+  cardBrand     String?
+  bankTrxId     String?
+  valId         String?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([customerId, status])
+  @@index([gatewayTrxId])
+  @@index([sessionKey])
+  @@index([createdAt])
+}
+
 // Lead model for CRM
 model Lead {
   id          String   @id @default(cuid())
@@ -409,14 +440,19 @@ model Preview {
   title       String
   description String
   thumbnailUrl String?
+  videoUrl    String?
   duration    Int      @default(10)
   prompt      String
   style       String   @default("cinematic")
   mood        String   @default("dynamic")
+  renderStatus String  @default("pending") // pending | generating | complete | failed
+  renderError String?
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@index([customerId])
   @@index([videoId])
+  @@index([renderStatus])
 }
 
 // AI-Generated Subtitles

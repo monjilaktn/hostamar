@@ -13,19 +13,26 @@ import {
   Menu,
   X,
   User,
-  Bell
+  Bell,
+  Subtitles,
+  Film,
+  Search,
+  MessageSquare,
+  PlayCircle,
+  BarChart3
 } from 'lucide-react'
 
 const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { href: '/dashboard/videos', icon: Video, label: 'Videos' },
-  { href: '/subtitles', icon: Video, label: 'Subtitles' },
-  { href: '/editor', icon: Video, label: 'Editor' },
-  { href: '/search', icon: Video, label: 'Search' },
-  { href: '/ai-chat', icon: Video, label: 'AI Chat' },
-  { href: '/previews', icon: Video, label: 'Previews' },
+  { href: '/dashboard/videos', icon: Video, label: 'My Videos' },
+  { href: '/dashboard/analytics', icon: BarChart3, label: 'Analytics' },
+  { href: '/editor', icon: Film, label: 'Create Video' },
+  { href: '/subtitles', icon: Subtitles, label: 'Subtitles' },
+  { href: '/search', icon: Search, label: 'Search' },
+  { href: '/ai-chat', icon: MessageSquare, label: 'AI Chat' },
+  { href: '/previews', icon: PlayCircle, label: 'Previews' },
   { href: '/dashboard/services', icon: Server, label: 'Services' },
-  { href: '/dashboard/payment', icon: CreditCard, label: 'Payment' },
+  { href: '/payment', icon: CreditCard, label: 'Buy Credits' },
   { href: '/dashboard/settings', icon: Settings, label: 'Settings' },
 ]
 

@@ -1,4 +1,4 @@
-import nodemailer from 'nodemailer'
+import nodemailer, { type Transporter } from 'nodemailer'
 import fs from 'fs'
 import path from 'path'
 
@@ -9,7 +9,7 @@ const SMTP_PASS = process.env.SMTP_PASS
 const SMTP_FROM = process.env.SMTP_FROM || 'noreply@hostamar.com'
 const APP_URL = process.env.NEXTAUTH_URL || 'http://localhost:3000'
 
-let transporter: nodemailer.Transporter | null = null
+let transporter: Transporter | null = null
 
 function getTransporter() {
   if (transporter) return transporter

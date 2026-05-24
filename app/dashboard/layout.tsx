@@ -19,6 +19,11 @@ import {
 const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { href: '/dashboard/videos', icon: Video, label: 'Videos' },
+  { href: '/subtitles', icon: Video, label: 'Subtitles' },
+  { href: '/editor', icon: Video, label: 'Editor' },
+  { href: '/search', icon: Video, label: 'Search' },
+  { href: '/ai-chat', icon: Video, label: 'AI Chat' },
+  { href: '/previews', icon: Video, label: 'Previews' },
   { href: '/dashboard/services', icon: Server, label: 'Services' },
   { href: '/dashboard/payment', icon: CreditCard, label: 'Payment' },
   { href: '/dashboard/settings', icon: Settings, label: 'Settings' },

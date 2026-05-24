@@ -9,6 +9,7 @@ interface EmailPayload {
   subject: string;
   body: string;
   from?: string;
+  id?: string;
 }
 
 // In-memory store (falls back to console log)

@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyToken } from '@/lib/auth'
+import * as jose from 'jose'
 
-export function middleware(request: NextRequest) {
+const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || '')
+
+export async function middleware(request: NextRequest) {
   const token = request.cookies.get('auth_token')?.value
   const { pathname } = request.nextUrl
 
@@ -11,9 +13,8 @@ export function middleware(request: NextRequest) {
   
   for (const p of publicPaths) {
     if (pathname === p || pathname.startsWith(p + '/')) {
-      // Check if it's an API sub-path we want to protect
       if (pathname.startsWith('/api/') && !publicApiPaths.some(ap => pathname.startsWith(ap))) {
-        break // don't skip, check auth below
+        break
       }
       return NextResponse.next()
     }
@@ -29,22 +30,23 @@ export function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // API routes — validate token
+  // API routes — validate token using jose (Edge-compatible)
   if (pathname.startsWith('/api/')) {
     if (!token) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
     }
-    const payload = verifyToken(token)
-    if (!payload) {
+    try {
+      const { payload } = await jose.jwtVerify(token, JWT_SECRET)
+      const requestHeaders = new Headers(request.headers)
+      requestHeaders.set('x-user-id', payload.id as string)
+      requestHeaders.set('x-user-email', payload.email as string)
+      requestHeaders.set('x-user-name', payload.name as string)
+      return NextResponse.next({
+        request: { headers: requestHeaders }
+      })
+    } catch {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
-    const requestHeaders = new Headers(request.headers)
-    requestHeaders.set('x-user-id', payload.id)
-    requestHeaders.set('x-user-email', payload.email)
-    requestHeaders.set('x-user-name', payload.name)
-    return NextResponse.next({
-      request: { headers: requestHeaders }
-    })
   }
 
   // Protected pages — redirect to login
@@ -52,8 +54,9 @@ export function middleware(request: NextRequest) {
     if (!token) {
       return NextResponse.redirect(new URL('/login', request.url))
     }
-    const payload = verifyToken(token)
-    if (!payload) {
+    try {
+      await jose.jwtVerify(token, JWT_SECRET)
+    } catch {
       return NextResponse.redirect(new URL('/login', request.url))
     }
   }

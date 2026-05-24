@@ -401,6 +401,37 @@ model PipelineSnapshot {
   createdAt     DateTime @default(now())
 }
 
+// AI-Generated Video Previews
+model Preview {
+  id          String   @id @default(cuid())
+  videoId     String?
+  customerId  String
+  title       String
+  description String
+  thumbnailUrl String?
+  duration    Int      @default(10)
+  prompt      String
+  style       String   @default("cinematic")
+  mood        String   @default("dynamic")
+  createdAt   DateTime @default(now())
+
+  @@index([customerId])
+  @@index([videoId])
+}
+
+// AI-Generated Subtitles
+model Subtitle {
+  id        String   @id @default(cuid())
+  videoId   String
+  language  String   @default("bn")
+  content   String   // Full transcript text
+  timestamps Json    // Array of {start, end, text} segments
+  createdAt DateTime @default(now())
+
+  @@index([videoId])
+  @@index([videoId, language])
+}
+
 // User progress tracking for OSSU courses
 model UserProgress {
   id          String   @id @default(cuid())

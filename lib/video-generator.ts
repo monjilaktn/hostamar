@@ -3,7 +3,7 @@
  * Generates marketing videos for customers using AI
  */
 
-import { OpenAI } from 'openai';
+import OpenAI from 'openai';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import ffmpeg from 'fluent-ffmpeg';
 import fs from 'fs/promises';
@@ -113,8 +113,9 @@ export async function generateVoiceOver(text: string, outputPath: string): Promi
 
   // Option 2: ElevenLabs (premium)
   if (process.env.ELEVENLABS_API_KEY) {
-    const { ElevenLabsClient } = await import('elevenlabs-node');
-    const client = new ElevenLabsClient({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const ElevenLabsModule: any = await import('elevenlabs-node');
+    const client = new ElevenLabsModule.ElevenLabsClient({
       apiKey: process.env.ELEVENLABS_API_KEY,
     });
 
@@ -171,7 +172,8 @@ export async function composeVideo(
         
         // Add logo overlay
         .input(params.logoUrl || path.join(process.cwd(), 'assets/default-logo.png'))
-        .complexFilter([
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .complexFilter!([
           // Position logo at top-right
           '[1:v][2:v]overlay=W-w-20:20[vid]',
           // Add text overlay (script.hook)

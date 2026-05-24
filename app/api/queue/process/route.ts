@@ -34,55 +34,61 @@ export async function POST(req: NextRequest) {
     })
 
     try {
-      // Render the video
-      const result = await renderPreviewVideo({
+      // Start rendering in background — don't block the response
+      renderPreviewVideo({
         prompt: nextJob.topic,
         duration: 30,
         style: 'cinematic',
         mood: 'dynamic',
+      }).then(async (result) => {
+        if (!result) {
+          throw new Error('Render returned null')
+        }
+        // Create video record
+        const video = await prisma.video.create({
+          data: {
+            customerId: nextJob.customerId,
+            title: nextJob.topic,
+            prompt: nextJob.topic,
+            status: 'completed',
+            duration: 30,
+            format: 'mp4',
+            resolution: '1080p',
+            url: result.videoUrl || null,
+            thumbnailUrl: result.thumbnailUrl || null,
+          },
+        })
+        // Update queue item
+        await prisma.videoQueue.update({
+          where: { id: nextJob.id },
+          data: {
+            status: 'completed',
+            videoId: video.id,
+            processedAt: new Date(),
+          },
+        })
+        // Notify user
+        await prisma.notification.create({
+          data: {
+            customerId: nextJob.customerId,
+            type: 'video_ready',
+            title: '🎬 ভিডিও তৈরি!',
+            message: `"${nextJob.topic}" ভিডিও রেডি — এখন দেখুন`,
+            actionUrl: '/dashboard/videos',
+          },
+        })
+      }).catch(async (error) => {
+        // Background render failed
+        await prisma.videoQueue.update({
+          where: { id: nextJob.id },
+          data: {
+            status: nextJob.attempts >= nextJob.maxAttempts ? 'failed' : 'queued',
+            error: error?.message || 'Render failed',
+          },
+        })
       })
 
-      if (!result) {
-        throw new Error('Render returned null')
-      }
-
-      // Create video record
-      const video = await prisma.video.create({
-        data: {
-          customerId: nextJob.customerId,
-          title: nextJob.topic,
-          prompt: nextJob.topic,
-          status: 'completed',
-          duration: 30,
-          format: 'mp4',
-          resolution: '1080p',
-          url: result.videoUrl || null,
-          thumbnailUrl: result.thumbnailUrl || null,
-        },
-      })
-
-      // Update queue item
-      await prisma.videoQueue.update({
-        where: { id: nextJob.id },
-        data: {
-          status: 'completed',
-          videoId: video.id,
-          processedAt: new Date(),
-        },
-      })
-
-      // Notify user
-      await prisma.notification.create({
-        data: {
-          customerId: nextJob.customerId,
-          type: 'video_ready',
-          title: '🎬 ভিডিও তৈরি!',
-          message: `"${nextJob.topic}" ভিডিও রেডি — এখন দেখুন`,
-          actionUrl: '/dashboard/videos',
-        },
-      })
-
-      return NextResponse.json({ success: true, videoId: video.id })
+      return NextResponse.json({ success: true, jobId: nextJob.id, message: 'Rendering started' })
     } catch (error: any) {
       // Mark as failed
       await prisma.videoQueue.update({

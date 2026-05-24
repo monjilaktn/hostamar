@@ -9,7 +9,7 @@ export async function middleware(request: NextRequest) {
 
   // Public paths — no auth needed
   const publicPaths = ['/', '/login', '/signup', '/pricing', '/about', '/contact', '/privacy', '/terms', '/blog', '/payment/success', '/payment/fail', '/payment/cancel']
-  const publicApiPaths = ['/api/auth/login', '/api/auth/register', '/api/health', '/api/auth/signup', '/api/payment/ipn']
+  const publicApiPaths = ['/api/auth/login', '/api/auth/register', '/api/health', '/api/auth/signup', '/api/payment/ipn', '/api/queue/process']
   
   for (const p of publicPaths) {
     if (pathname === p || pathname.startsWith(p + '/')) {

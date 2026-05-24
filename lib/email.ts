@@ -55,14 +55,14 @@ export async function sendWelcomeEmail(to: string, name: string): Promise<boolea
   return sendEmail({
     to,
     subject: "স্বাগতম Hostamar এ! 🎉",
-    html: \`
+    html: `
       <div style="font-family:sans-serif;max-width:600px;margin:0 auto;background:#0f172a;color:#e2e8f0;padding:40px;border-radius:12px">
-        <h1 style="color:#6366f1;margin:0 0 20px">স্বাগতম, \${name}! 👋</h1>
+        <h1 style="color:#6366f1;margin:0 0 20px">স্বাগতম, ${name}! 👋</h1>
         <p style="font-size:16px;line-height:1.6">Hostamar এ আপনার অ্যাকাউন্ট তৈরি হয়েছে। এখনই ভিডিও তৈরি শুরু করুন!</p>
         <a href="https://hostamar.vercel.app/dashboard" style="display:inline-block;background:#6366f1;color:#fff;padding:12px 32px;border-radius:8px;text-decoration:none;margin:20px 0;font-size:16px">ড্যাশবোর্ডে যান →</a>
         <p style="margin-top:30px;font-size:14px;color:#94a3b8">Hostamar — AI ভিডিও সাবটাইটেল, ডাবিং ও প্রসেসিং</p>
       </div>
-    \`,
+    `,
   });
 }
 
@@ -70,13 +70,13 @@ export async function sendPasswordResetEmail(to: string, name: string, resetUrl:
   return sendEmail({
     to,
     subject: "পাসওয়ার্ড রিসেট — Hostamar",
-    html: \`
+    html: `
       <div style="font-family:sans-serif;max-width:600px;margin:0 auto;background:#0f172a;color:#e2e8f0;padding:40px;border-radius:12px">
         <h1 style="color:#6366f1;margin:0 0 20px">পাসওয়ার্ড রিসেট</h1>
-        <p style="font-size:16px;line-height:1.6">হ্যালো \${name}, আপনার পাসওয়ার্ড রিসেট করতে নিচের বাটনে ক্লিক করুন:</p>
-        <a href="\${resetUrl}" style="display:inline-block;background:#ef4444;color:#fff;padding:12px 32px;border-radius:8px;text-decoration:none;margin:20px 0;font-size:16px">পাসওয়ার্ড রিসেট করুন</a>
+        <p style="font-size:16px;line-height:1.6">হ্যালো ${name}, আপনার পাসওয়ার্ড রিসেট করতে নিচের বাটনে ক্লিক করুন:</p>
+        <a href="${resetUrl}" style="display:inline-block;background:#ef4444;color:#fff;padding:12px 32px;border-radius:8px;text-decoration:none;margin:20px 0;font-size:16px">পাসওয়ার্ড রিসেট করুন</a>
         <p style="font-size:14px;color:#94a3b8">এই লিংক ১ ঘন্টার জন্য বৈধ।</p>
       </div>
-    \`,
+    `,
   });
 }

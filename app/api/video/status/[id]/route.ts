@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getRenderProgress } from '@/lib/video-renderer';
+
+// No import of @/lib/video-renderer — Remotion FFmpeg binaries can't build on Vercel.
+// Render progress is tracked in the DB by the local render worker.
 
 /**
  * GET /api/video/status/[id]
@@ -18,9 +20,6 @@ export async function GET(
     if (!previewId) {
       return NextResponse.json({ error: 'Preview ID is required' }, { status: 400 });
     }
-
-    // Get in-memory progress (set during active rendering)
-    const inProgress = getRenderProgress(previewId);
 
     // Get DB record
     const preview = await prisma.preview.findUnique({
@@ -43,12 +42,13 @@ export async function GET(
       return NextResponse.json({ error: 'Preview not found' }, { status: 404 });
     }
 
-    // Merge in-memory progress with DB state
+    // Calculate progress from DB state
     const status = preview.renderStatus;
-    const progress = inProgress?.progress ?? (
+    const progress = (
       status === 'complete' ? 1.0 :
       status === 'failed' ? 0 :
       status === 'generating' ? 0.5 :
+      status === 'queued' ? 0.1 :
       0
     );
 

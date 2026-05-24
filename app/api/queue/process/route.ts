@@ -1,23 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
-// Dynamic import to avoid bundling Remotion FFmpeg binaries on Vercel
-let renderPreviewVideo: typeof import('@/lib/video-renderer').renderPreviewVideo | null = null
-async function getRenderer() {
-  if (!renderPreviewVideo) {
-    const mod = await import('@/lib/video-renderer')
-    renderPreviewVideo = mod.renderPreviewVideo
-  }
-  return renderPreviewVideo
-}
+// The queue process route is designed to work on Vercel by setting DB state only.
+// Actual video rendering runs on the local Windows machine via the cron worker.
+// This avoids bundling @remotion/renderer (FFmpeg binaries) on Vercel.
 
-// Process queue — called by cron or manually
-// Processes pending queue items one at a time
 export async function POST(req: NextRequest) {
   try {
     const { secret } = await req.json().catch(() => ({ secret: '' }))
     
-    // Simple auth check using env secret
     const queueSecret = process.env.QUEUE_SECRET || 'hostamar-dev-secret'
     if (secret !== queueSecret) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -36,89 +27,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'No pending jobs' })
     }
 
-    // Mark as processing
+    // Mark as processing (local worker will render and update)
     await prisma.videoQueue.update({
       where: { id: nextJob.id },
-      data: { status: 'processing', attempts: { increment: 1 } },
+      data: { 
+        status: 'processing', 
+        attempts: { increment: 1 },
+        processedAt: new Date(),
+      },
     })
 
-    try {
-      // Create a Preview record first — renderPreviewVideo requires a DB previewId
-      const preview = await prisma.preview.create({
-        data: {
-          prompt: nextJob.topic,
-          title: nextJob.topic,
-          style: 'cinematic',
-          duration: 30,
-          mood: 'dynamic',
-          renderStatus: 'pending',
-          status: 'pending',
-          customerId: nextJob.customerId,
-        },
-      })
-
-      // Start rendering in background — don't block the response
-      getRenderer().then(render => render(preview.id)).then(async (result) => {
-        if (!result) {
-          throw new Error('Render returned null')
-        }
-        // Create video record
-        const video = await prisma.video.create({
-          data: {
-            customerId: nextJob.customerId,
-            title: nextJob.topic,
-            prompt: nextJob.topic,
-            status: 'completed',
-            duration: 30,
-            format: 'mp4',
-            resolution: '1080p',
-            url: result.videoUrl || null,
-            thumbnailUrl: result.thumbnailUrl || null,
-          },
-        })
-        // Update queue item
-        await prisma.videoQueue.update({
-          where: { id: nextJob.id },
-          data: {
-            status: 'completed',
-            videoId: video.id,
-            processedAt: new Date(),
-          },
-        })
-        // Notify user
-        await prisma.notification.create({
-          data: {
-            customerId: nextJob.customerId,
-            type: 'video_ready',
-            title: '🎬 ভিডিও তৈরি!',
-            message: `"${nextJob.topic}" ভিডিও রেডি — এখন দেখুন`,
-            actionUrl: '/dashboard/videos',
-          },
-        })
-      }).catch(async (error) => {
-        // Background render failed
-        await prisma.videoQueue.update({
-          where: { id: nextJob.id },
-          data: {
-            status: nextJob.attempts >= nextJob.maxAttempts ? 'failed' : 'queued',
-            error: error?.message || 'Render failed',
-          },
-        })
-      })
-
-      return NextResponse.json({ success: true, jobId: nextJob.id, message: 'Rendering started' })
-    } catch (error: any) {
-      // Mark as failed
-      await prisma.videoQueue.update({
-        where: { id: nextJob.id },
-        data: {
-          status: nextJob.attempts >= nextJob.maxAttempts ? 'failed' : 'queued',
-          error: error?.message || 'Render failed',
-        },
-      })
-
-      return NextResponse.json({ error: 'Render failed' }, { status: 500 })
-    }
+    return NextResponse.json({ 
+      success: true, 
+      jobId: nextJob.id, 
+      status: 'processing',
+      message: 'Job marked for local render worker' 
+    })
   } catch (error: any) {
     console.error('Queue worker error:', error?.message || error)
     return NextResponse.json({ error: 'Internal error' }, { status: 500 })

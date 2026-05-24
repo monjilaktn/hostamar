@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUser } from '@/lib/get-auth-user';
 import { prisma } from '@/lib/prisma';
-import { renderPreviewVideo } from '@/lib/video-renderer';
+
+// Video rendering runs on the local Windows machine via cron worker.
+// This API route creates the DB entry and returns — actual rendering
+// is handled by the local render-worker.ts script.
+// No import of @remotion/renderer here avoids FFmpeg binary build errors.
 
 /**
  * POST /api/video/render
@@ -35,19 +39,9 @@ export async function POST(req: NextRequest) {
     }
 
     if (preview.customerId !== authUser.id) {
-      return NextResponse.json({ error: 'Unauthorized access to this preview' }, { status: 403 });
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Don't re-trigger if already generating
-    if (preview.renderStatus === 'generating') {
-      return NextResponse.json({
-        success: true,
-        message: 'Video is already being generated',
-        status: 'generating',
-      });
-    }
-
-    // If already complete, return cached result
     if (preview.renderStatus === 'complete') {
       const completePreview = await prisma.preview.findUnique({
         where: { id: previewId },
@@ -63,22 +57,27 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Mark as generating in DB
+    // Mark as queued for local render worker
     await prisma.preview.update({
       where: { id: previewId },
-      data: { renderStatus: 'generating' },
+      data: { renderStatus: 'queued' },
     });
 
-    // Fire render in background (non-blocking)
-    // We use a promise that's awaited but with a long timeout
-    const result = await renderPreviewVideo(previewId);
+    // Add to video queue for local worker
+    await prisma.videoQueue.create({
+      data: {
+        customerId: authUser.id,
+        topic: previewId,
+        type: 'render',
+        status: 'queued',
+        priority: 1,
+      },
+    });
 
     return NextResponse.json({
       success: true,
-      videoUrl: result.videoUrl,
-      thumbnailUrl: result.thumbnailUrl,
-      status: 'complete',
-      message: 'Video rendered successfully',
+      status: 'queued',
+      message: 'Queued for local render worker',
     });
   } catch (error: any) {
     console.error('[Video Render API] Error:', error?.message || error);

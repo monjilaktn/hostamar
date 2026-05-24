@@ -1,6 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { renderPreviewVideo } from '@/lib/video-renderer'
+
+// Dynamic import to avoid bundling Remotion FFmpeg binaries on Vercel
+let renderPreviewVideo: typeof import('@/lib/video-renderer').renderPreviewVideo | null = null
+async function getRenderer() {
+  if (!renderPreviewVideo) {
+    const mod = await import('@/lib/video-renderer')
+    renderPreviewVideo = mod.renderPreviewVideo
+  }
+  return renderPreviewVideo
+}
 
 // Process queue — called by cron or manually
 // Processes pending queue items one at a time
@@ -49,7 +58,7 @@ export async function POST(req: NextRequest) {
       })
 
       // Start rendering in background — don't block the response
-      renderPreviewVideo(preview.id).then(async (result) => {
+      getRenderer().then(render => render(preview.id)).then(async (result) => {
         if (!result) {
           throw new Error('Render returned null')
         }

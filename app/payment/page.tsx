@@ -43,7 +43,7 @@ export default function BuyCreditsPage() {
     setError('')
 
     try {
-      const res = await fetch('/api/payment/bkash-verify', {
+      const res = await fetch('/api/payment/bkash/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

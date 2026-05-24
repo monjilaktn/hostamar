@@ -34,13 +34,22 @@ export async function POST(req: NextRequest) {
     })
 
     try {
+      // Create a Preview record first — renderPreviewVideo requires a DB previewId
+      const preview = await prisma.preview.create({
+        data: {
+          prompt: nextJob.topic,
+          title: nextJob.topic,
+          style: 'cinematic',
+          duration: 30,
+          mood: 'dynamic',
+          renderStatus: 'pending',
+          status: 'pending',
+          customerId: nextJob.customerId,
+        },
+      })
+
       // Start rendering in background — don't block the response
-      renderPreviewVideo({
-        prompt: nextJob.topic,
-        duration: 30,
-        style: 'cinematic',
-        mood: 'dynamic',
-      }).then(async (result) => {
+      renderPreviewVideo(preview.id).then(async (result) => {
         if (!result) {
           throw new Error('Render returned null')
         }

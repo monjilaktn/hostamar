@@ -1,39 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/get-auth-user'
-
-const APP_URL = process.env.NEXTAUTH_URL || 'http://localhost:3000'
-
-// ---------------------------------------------------------------------------
-// GET  — Legacy redirect handler (formerly SSLCommerz IPN callbacks).
-//       bKash personal has no real IPN, so we just redirect.
-//       This also handles any bookmarkable success/fail/cancel links.
-// ---------------------------------------------------------------------------
-export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url)
-  const type = searchParams.get('type') || 'success'
-
-  try {
-    if (type === 'success') {
-      return NextResponse.redirect(`${APP_URL}/payment/success`)
-    }
-    if (type === 'fail') {
-      return NextResponse.redirect(`${APP_URL}/payment/fail`)
-    }
-    if (type === 'cancel') {
-      return NextResponse.redirect(`${APP_URL}/payment/cancel`)
-    }
-    return NextResponse.redirect(`${APP_URL}/payment/fail`)
-  } catch (error) {
-    console.error('IPN redirect error:', error)
-    return NextResponse.redirect(`${APP_URL}/payment/fail`)
-  }
-}
+import { prisma } from '@/lib/prisma'
 
 // ---------------------------------------------------------------------------
-// POST — bKash personal payment verification.
-//        User sends money to 01822417463 via bKash app, then submits TrxID.
-//        Transaction is kept as pending_verification for manual admin review.
+// POST /api/payment/bkash/verify
+// User submits bKash TrxID + sender number after sending money to 01822417463.
+// Creates a pending_verification transaction for manual admin review.
 // ---------------------------------------------------------------------------
 export async function POST(req: NextRequest) {
   try {
@@ -70,12 +42,12 @@ export async function POST(req: NextRequest) {
         gatewayTrxId: trxId,
         videoPackage: pkg,
         creditsAdded: credits,
-        cardType: senderNumber || null,
-        cardBrand: bkashNumber || null,
+        cardType: senderNumber || null,   // stores the sender's bKash number
+        cardBrand: bkashNumber || null,    // stores the merchant number (01822417463)
       },
     })
 
-    // Notify admin about new pending payment
+    // Create notification for admin
     await prisma.notification.create({
       data: {
         customerId: authUser.id,
@@ -88,7 +60,35 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (error: any) {
-    console.error('bKash IPN error:', error?.message || error)
+    console.error('bKash verify error:', error?.message || error)
     return NextResponse.json({ error: 'পেমেন্ট যাচাই করতে সমস্যা হয়েছে' }, { status: 500 })
+  }
+}
+
+// ---------------------------------------------------------------------------
+// GET /api/payment/bkash/verify — list pending bKash payments (admin)
+// ---------------------------------------------------------------------------
+export async function GET(req: NextRequest) {
+  try {
+    const authUser = await getAuthUser(req)
+    if (!authUser) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const pending = await prisma.transaction.findMany({
+      where: {
+        status: 'pending_verification',
+        gateway: 'bkash_personal',
+      },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        customer: { select: { id: true, name: true, email: true, phone: true } },
+      },
+    })
+
+    return NextResponse.json({ transactions: pending })
+  } catch (error: any) {
+    console.error('Pending bKash payments error:', error?.message || error)
+    return NextResponse.json({ error: 'Failed to load' }, { status: 500 })
   }
 }

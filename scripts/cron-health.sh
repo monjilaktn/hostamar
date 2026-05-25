@@ -39,10 +39,10 @@ if [ "$TUNNEL" -eq 0 ]; then
     echo "Ollama (tunnel :11435): $OLLAMA_MODELS"
 fi
 
-# Note: MinIO (:9000) and Mailpit (:8025) run on remote 192.168.1.3 only
-# They are not tunneled; access directly on 192.168.1.3 from LAN machines
-echo "MinIO (remote 192.168.1.3:9000): assume UP (no tunnel)"
-echo "Mailpit (remote 192.168.1.3:8025): assume UP (no tunnel)"
+# Note: MinIO (:9000) and Mailpit (:8025) run on remote DESKTOP-9KA03CQ only
+# They are not tunneled; access via hostname from LAN machines (DHCP-safe)
+echo "MinIO (remote DESKTOP-9KA03CQ:9000): assume UP (no tunnel)"
+echo "Mailpit (remote DESKTOP-9KA03CQ:8025): assume UP (no tunnel)"
 
 # System resources
 echo "--- System ---"

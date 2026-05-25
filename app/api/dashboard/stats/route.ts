@@ -1,18 +1,17 @@
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-config'
+import { getAuthUser } from '@/lib/auth'
 import prisma from '@/lib/prisma'
 
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions)
+    const authUser = await getAuthUser()
 
-    if (!session?.user?.email) {
+    if (!authUser) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const customer = await prisma.customer.findUnique({
-      where: { email: session.user.email },
+      where: { id: authUser.id },
       include: {
         videos: {
           orderBy: { createdAt: 'desc' },
@@ -49,10 +48,21 @@ export async function GET() {
 
     const activeSubscription = customer.subscriptions?.[0] || null
 
+    const totalVideos = customer.videos.length
+    const totalPreviews = customer.videos.filter((v: any) => v.status === 'ready').length
+    const creditsRemaining = activeSubscription?.videosPerMonth
+      ? Math.max(0, activeSubscription.videosPerMonth - videosThisMonth)
+      : 10 - videosThisMonth
+
     return NextResponse.json({
+      // New simplified stats format
+      totalVideos,
+      totalPreviews,
+      creditsRemaining,
+      // Legacy format for backward compatibility
       stats: {
         videos: {
-          total: customer.videos.length,
+          total: totalVideos,
           thisMonth: videosThisMonth,
         },
         services: {

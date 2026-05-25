@@ -64,7 +64,7 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <p className="text-sm text-gray-400">Email</p>
-                    <p className="font-semibold">support@hostamar.com</p>
+                    <p className="font-semibold">{process.env.NEXT_PUBLIC_SUPPORT_EMAIL || 'support@hostamar.com'}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-4">

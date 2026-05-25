@@ -15,7 +15,7 @@ const notoBengali = Noto_Sans_Bengali({
   display: 'swap',
 })
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://hostamar.com'
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://hostamar.com';
 
 export const metadata: Metadata = {
   ...defaultSeo,

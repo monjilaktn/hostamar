@@ -4,6 +4,9 @@
  * Returns pre-made templates and mock results
  */
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://hostamar.com';
+const SITE_DOMAIN = SITE_URL.replace(/^https?:\/\//, '');
+
 const DEMO_SCRIPTS = [
   {
     title: "আপনার ব্যবসার সাফল্যের গল্প",
@@ -13,7 +16,7 @@ const DEMO_SCRIPTS = [
       "AI ভিডিও জেনারেশন এখন সবার জন্য সহজলভ্য",
       "মাত্র ৫ মিনিটে প্রফেশনাল ভিডিও তৈরি করুন"
     ],
-    callToAction: "এখনই শুরু করুন hostamar.com",
+    callToAction: `এখনই শুরু করুন ${SITE_DOMAIN}`,
     duration: 45
   },
   {
@@ -24,7 +27,7 @@ const DEMO_SCRIPTS = [
       "ভিডিওতে প্রোডাক্ট ইউজ করা দেখান",
       "কল টু অ্যাকশন দিন"
     ],
-    callToAction: "আজই ভিডিও তৈরি করুন → hostamar.com",
+    callToAction: `আজই ভিডিও তৈরি করুন → ${SITE_DOMAIN}`,
     duration: 30
   }
 ];
@@ -54,7 +57,7 @@ export async function composeVideo(script: any, params: any, outputPath: string)
 
 export async function uploadVideo(filePath: string, customerId: string) {
   // Return mock URL
-  const mockUrl = `https://hostamar.com/demo-videos/${customerId}/demo-${Date.now()}.mp4`;
+  const mockUrl = `${SITE_URL}/demo-videos/${customerId}/demo-${Date.now()}.mp4`;
   console.log('[Demo Mode] Mock upload URL:', mockUrl);
   return mockUrl;
 }
@@ -63,7 +66,7 @@ export async function generateMarketingVideo(params: any) {
   console.log(`[Demo Mode] Generating marketing video for ${params.businessName}...`);
   
   const script = await generateVideoScript(params);
-  const videoUrl = `https://hostamar.com/demo-videos/${params.customerId}/demo-${Date.now()}.mp4`;
+  const videoUrl = `${SITE_URL}/demo-videos/${params.customerId}/demo-${Date.now()}.mp4`;
   
   return {
     videoUrl,

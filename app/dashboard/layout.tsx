@@ -13,12 +13,14 @@ import {
   Menu,
   X,
   User,
-  Bell
+  Bell,
+  BarChart3
 } from 'lucide-react'
 
 const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { href: '/dashboard/videos', icon: Video, label: 'Videos' },
+  { href: '/dashboard/analytics', icon: BarChart3, label: 'Analytics' },
   { href: '/dashboard/services', icon: Server, label: 'Services' },
   { href: '/dashboard/payment', icon: CreditCard, label: 'Payment' },
   { href: '/dashboard/settings', icon: Settings, label: 'Settings' },

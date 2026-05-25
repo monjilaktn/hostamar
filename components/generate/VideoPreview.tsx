@@ -44,7 +44,7 @@ function VideoResult({ url }: { url: string }) {
         </video>
       </div>
       <div className="mt-4 flex flex-wrap gap-3">
-        <CopyUrlButton url={typeof window !== 'undefined' ? window.location.origin + url : 'https://hostamar.com' + url} />
+        <CopyUrlButton url={typeof window !== 'undefined' ? window.location.origin + url : (process.env.NEXT_PUBLIC_SITE_URL || 'https://hostamar.com') + url} />
         <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">✏️ সম্পাদনা করুন</button>
         <button className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">📤 ডাউনলোড</button>
         <button className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">📱 শেয়ার করুন</button>

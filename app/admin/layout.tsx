@@ -122,7 +122,7 @@ export default function AdminLayout({
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-sm">Admin</p>
-                <p className="text-xs text-slate-400">admin@hostamar.com</p>
+                <p className="text-xs text-slate-400">{process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'admin@hostamar.com'}</p>
               </div>
             </div>
             <button

@@ -1,0 +1,24 @@
+name: Set Vercel Env
+on: workflow_dispatch
+jobs:
+  set-env:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Update Vercel DATABASE_URL
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+        run: |
+          DB_URL="postgresql://neondb_owner:AiwvHVergh7jrsMU9yybLcdILe56ozo1eiVPWJz99cY@ep-empty-firefly-apkx8hzh.c-7.us-east-1.aws.neon.tech/neondb?sslmode=require&connect_timeout=10"
+          curl -sf -X POST "https://api.vercel.com/v1/projects/$VERCEL_PROJECT_ID/env" \
+            -H "Authorization: Bearer $VERCEL_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"key\": \"DATABASE_URL\",
+              \"value\": \"$DB_URL\",
+              \"target\": [\"production\", \"preview\", \"development\"],
+              \"type\": \"encrypted\"
+            }" 2>&1
+          echo "Done"

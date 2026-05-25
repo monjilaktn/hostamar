@@ -2,8 +2,6 @@
 const nextConfig = {
   reactStrictMode: true,
   images: {
-    // Enable Vercel Edge CDN image optimization (requires `sharp` which is bundled with Next.js)
-    // Disabling unoptimized: true allows Next.js Image Optimization API to work on Vercel Edge
     unoptimized: false,
     formats: ['image/avif', 'image/webp'],
     deviceSizes: [640, 768, 1024, 1280, 1536],
@@ -19,9 +17,20 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   experimental: {
-    optimizeCss: false, // disabled by default — enable if using styled-components/tailwind with critters
+    optimizeCss: false,
     scrollRestoration: true,
   },
 }
 
-module.exports = nextConfig
+const { withSentryConfig } = require('@sentry/nextjs')
+
+module.exports = withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG || 'hostamar',
+  project: process.env.SENTRY_PROJECT || 'hostamar',
+  silent: !process.env.CI,
+  widenClientFileUpload: true,
+  tunnelRoute: '/monitoring',
+  hideSourceMaps: true,
+  disableLogger: true,
+  automaticVercelMonitors: true,
+})

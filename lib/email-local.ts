@@ -9,11 +9,13 @@ interface EmailPayload {
   subject: string;
   body: string;
   from?: string;
-  id?: string;
 }
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://hostamar.com';
+const SMTP_FROM = process.env.SMTP_FROM || 'noreply@hostamar.com';
+
 // In-memory store (falls back to console log)
-const emailLog: EmailPayload[] = [];
+const emailLog: (EmailPayload & { id: string })[] = [];
 
 export async function sendEmail(payload: EmailPayload): Promise<{ success: boolean; id: string; mode: string }> {
   const id = `email_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
@@ -23,7 +25,7 @@ export async function sendEmail(payload: EmailPayload): Promise<{ success: boole
     id,
     to: payload.to,
     subject: payload.subject,
-    from: payload.from || 'noreply@hostamar.com',
+    from: payload.from || SMTP_FROM,
     body: payload.body.substring(0, 200) + (payload.body.length > 200 ? '...' : ''),
     timestamp: new Date().toISOString()
   });
@@ -33,7 +35,7 @@ export async function sendEmail(payload: EmailPayload): Promise<{ success: boole
   
   // Try to store in API log endpoint (if DB is available)
   try {
-    await fetch('https://hostamar.com/api/logs', {
+    await fetch(`${SITE_URL}/api/logs`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -71,7 +73,7 @@ export async function sendWelcomeEmail(email: string, name: string) {
 🔹 বেসিক: ৳২,০০০ (১০টি ভিডিও)
 🔹 বিজনেস: ৳৩,৫০০ (৩০টি ভিডিও)
 
-👉 শুরু করুন: https://hostamar.com/dashboard
+👉 শুরু করুন: ${SITE_URL}/dashboard
 
 ধন্যবাদ,
 হোস্টামার টিম
@@ -86,7 +88,7 @@ export async function sendPasswordReset(email: string, token: string) {
     body: `
 আপনার পাসওয়ার্ড রিসেট লিঙ্ক:
 
-👉 https://hostamar.com/reset-password?token=${token}
+👉 ${SITE_URL}/reset-password?token=${token}
 
 এই লিঙ্ক ১ ঘন্টার জন্য বৈধ।
 যদি আপনি এই রিকোয়েস্ট না করে থাকেন, তাহলে এই ইমেইল ইগনোর করুন।
@@ -107,7 +109,7 @@ export async function sendPaymentConfirmation(email: string, plan: string, amoun
 প্ল্যান: ${plan}
 পরিমাণ: ৳${amount.toLocaleString()}
 
-👉 ড্যাশবোর্ড: https://hostamar.com/dashboard
+👉 ড্যাশবোর্ড: ${SITE_URL}/dashboard
 
 ধন্যবাদ,
 হোস্টামার টিম

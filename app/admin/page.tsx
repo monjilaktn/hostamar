@@ -51,9 +51,9 @@ export default function AdminDashboard() {
       if (statsData.success) setStats(statsData.data)
       if (customersData.success) setCustomers(customersData.data)
       if (ordersData.success) setOrders(ordersData.data)
-    } catch (err: unknown) {
+    } catch (err) {
       console.error('Dashboard fetch error:', err)
-      if (err instanceof Error && err.message?.includes('401')) router.push('/login')
+      if ((err as Error).message?.includes('401')) router.push('/login')
     } finally {
       setLoading(false)
     }

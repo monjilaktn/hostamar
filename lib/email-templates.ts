@@ -33,7 +33,7 @@ export const EmailTemplates = {
 
           <p style="margin-top: 24px; font-size: 14px; color: #64748b;">
             কোনো সাহায্য দরকার? আমাদের সাপোর্ট দলে যোগাযোগ করুন:<br>
-            📧 support@hostamar.com<br>
+            📧 {process.env.NEXT_PUBLIC_SUPPORT_EMAIL || 'support@hostamar.com'}<br>
             📱 ফেসবুক গ্রুপ: Hostamar Community
           </p>
         </div>

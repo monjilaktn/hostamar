@@ -1,34 +1,29 @@
-import bcrypt from 'bcryptjs'
-import jwt from 'jsonwebtoken'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth-config'
+import prisma from '@/lib/prisma'
 
-const JWT_SECRET = process.env.JWT_SECRET
-if (!JWT_SECRET) {
-  throw new Error('JWT_SECRET environment variable is required')
-}
+export async function getAuthUser() {
+  const session = await getServerSession(authOptions)
 
-export interface JwtPayload {
-  id: string
-  email: string
-  name: string
-  role?: string
-}
-
-export async function hashPassword(password: string): Promise<string> {
-  return bcrypt.hash(password, 12)
-}
-
-export async function comparePassword(password: string, hash: string): Promise<boolean> {
-  return bcrypt.compare(password, hash)
-}
-
-export function signToken(payload: JwtPayload): string {
-  return jwt.sign(payload, JWT_SECRET!, { expiresIn: '7d' })
-}
-
-export function verifyToken(token: string): JwtPayload | null {
-  try {
-    return jwt.verify(token, JWT_SECRET!) as JwtPayload
-  } catch {
+  if (!session?.user?.email) {
     return null
   }
+
+  const customer = await prisma.customer.findUnique({
+    where: { email: session.user.email },
+  })
+
+  if (!customer) {
+    return null
+  }
+
+  return {
+    id: customer.id,
+    name: customer.name,
+    email: customer.email,
+    phone: customer.phone,
+    customer,
+  }
 }
+
+export type AuthUser = Exclude<Awaited<ReturnType<typeof getAuthUser>>, null>

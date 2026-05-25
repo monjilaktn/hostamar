@@ -50,30 +50,30 @@ export default function DashboardPage() {
 
   const statCards = [
     {
-      title: 'মোট ভিডিও',
+      title: 'Total Videos',
       value: stats?.videos.total || 0,
-      subtext: `${stats?.videos.thisMonth || 0} এই মাসে`,
+      subtext: `${stats?.videos.thisMonth || 0} this month`,
       icon: Video,
       color: 'bg-blue-500',
     },
     {
-      title: 'সক্রিয় পরিষেবা',
+      title: 'Active Services',
       value: stats?.services.active || 0,
-      subtext: `${stats?.services.total || 0} সর্বমোট`,
+      subtext: `${stats?.services.total || 0} total`,
       icon: Server,
       color: 'bg-green-500',
     },
     {
-      title: 'ব্যবহৃত স্টোরেজ',
+      title: 'Storage Used',
       value: `${stats?.storage.used || 0} GB`,
-      subtext: `${stats?.storage.total || 0} GB সর্বমোট`,
+      subtext: `${stats?.storage.total || 0} GB total`,
       icon: TrendingUp,
       color: 'bg-purple-500',
     },
     {
-      title: 'সাবস্ক্রিপশন',
-      value: stats?.subscription?.plan || 'ফ্রি',
-      subtext: stats?.subscription?.nextBilling || 'কোনো সক্রিয় প্ল্যান নেই',
+      title: 'Subscription',
+      value: stats?.subscription?.plan || 'Free',
+      subtext: stats?.subscription?.nextBilling || 'No active plan',
       icon: CreditCard,
       color: 'bg-orange-500',
     },
@@ -100,8 +100,8 @@ export default function DashboardPage() {
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">ড্যাশবোর্ড</h1>
-        <p className="text-gray-500 mt-1">স্বাগতম! আপনার অ্যাকাউন্টের সারসংক্ষেপ।</p>
+        <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Dashboard</h1>
+        <p className="text-gray-500 mt-1">Welcome back! Here&apos;s your account overview.</p>
       </div>
 
       {/* Stats Grid */}
@@ -127,7 +127,7 @@ export default function DashboardPage() {
 
       {/* Quick Actions */}
       <div className="bg-white rounded-xl p-6 shadow-sm border">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">দ্রুত অ্যাকশন</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <a
             href="/dashboard/videos/new"
@@ -137,8 +137,8 @@ export default function DashboardPage() {
               <Play className="w-5 h-5 text-blue-600" />
             </div>
             <div>
-              <p className="font-medium text-gray-900">ভিডিও তৈরি করুন</p>
-              <p className="text-xs text-gray-500">নতুন ভিডিও তৈরি করুন</p>
+              <p className="font-medium text-gray-900">Create Video</p>
+              <p className="text-xs text-gray-500">Generate new video</p>
             </div>
           </a>
           <a
@@ -149,8 +149,8 @@ export default function DashboardPage() {
               <Server className="w-5 h-5 text-green-600" />
             </div>
             <div>
-              <p className="font-medium text-gray-900">পরিষেবা যোগ করুন</p>
-              <p className="text-xs text-gray-500">নতুন পরিষেবা অর্ডার করুন</p>
+              <p className="font-medium text-gray-900">Add Service</p>
+              <p className="text-xs text-gray-500">Order new service</p>
             </div>
           </a>
           <a
@@ -161,8 +161,8 @@ export default function DashboardPage() {
               <CreditCard className="w-5 h-5 text-orange-600" />
             </div>
             <div>
-              <p className="font-medium text-gray-900">বিলিং</p>
-              <p className="text-xs text-gray-500">পেমেন্ট পরিচালনা করুন</p>
+              <p className="font-medium text-gray-900">Billing</p>
+              <p className="text-xs text-gray-500">Manage payments</p>
             </div>
           </a>
           <a
@@ -173,8 +173,8 @@ export default function DashboardPage() {
               <Users className="w-5 h-5 text-purple-600" />
             </div>
             <div>
-              <p className="font-medium text-gray-900">প্রোফাইল</p>
-              <p className="text-xs text-gray-500">বিবরণ আপডেট করুন</p>
+              <p className="font-medium text-gray-900">Profile</p>
+              <p className="text-xs text-gray-500">Update details</p>
             </div>
           </a>
         </div>
@@ -183,9 +183,9 @@ export default function DashboardPage() {
       {/* Recent Videos */}
       <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
         <div className="px-6 py-4 border-b flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">সাম্প্রতিক ভিডিও</h2>
+          <h2 className="text-lg font-semibold text-gray-900">Recent Videos</h2>
           <a href="/dashboard/videos" className="text-sm text-blue-600 hover:underline">
-            সব দেখুন
+            View all
           </a>
         </div>
         {recentVideos.length > 0 ? (
@@ -213,9 +213,9 @@ export default function DashboardPage() {
         ) : (
           <div className="px-6 py-12 text-center">
             <Video className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500">এখনো কোনো ভিডিও নেই</p>
+            <p className="text-gray-500">No videos yet</p>
             <a href="/dashboard/videos/new" className="text-blue-600 hover:underline text-sm">
-              আপনার প্রথম ভিডিও তৈরি করুন
+              Create your first video
             </a>
           </div>
         )}

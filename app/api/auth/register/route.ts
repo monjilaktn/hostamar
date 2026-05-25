@@ -5,7 +5,7 @@ import bcrypt from 'bcryptjs'
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}))
-    const { name, email, password, referralCode } = body
+    const { name, email, password } = body
 
     if (!name || !email || !password) {
       return NextResponse.json({ error: 'সকল ফিল্ড পূরণ করুন' }, { status: 400 })
@@ -30,53 +30,13 @@ export async function POST(req: NextRequest) {
         name,
         email,
         password: hashedPassword,
-        credits: referralCode ? 8 : 3, // Bonus credits if referred
       }
     })
-
-    // Apply referral if provided
-    let referralApplied = false
-    if (referralCode) {
-      try {
-        const referrer = await prisma.customer.findUnique({
-          where: { referralCode },
-        })
-        if (referrer && referrer.id !== customer.id) {
-          // Check no existing referral
-          const existingRef = await prisma.referral.findFirst({
-            where: { referredId: customer.id },
-          })
-          if (!existingRef) {
-            await prisma.referral.create({
-              data: {
-                referrerId: referrer.id,
-                referredId: customer.id,
-                status: 'COMPLETED',
-                bonusAmount: 5,
-              },
-            })
-            // Give referrer 5 bonus credits
-            await prisma.customer.update({
-              where: { id: referrer.id },
-              data: { 
-                credits: { increment: 5 },
-                referralBonus: { increment: 5 },
-              },
-            })
-            referralApplied = true
-          }
-        }
-      } catch (err) {
-        console.error('Referral apply error:', err)
-      }
-    }
 
     return NextResponse.json({
       success: true,
       message: 'অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে!',
-      userId: customer.id,
-      referralApplied,
-      bonusCredits: referralApplied ? 8 : 3,
+      userId: customer.id
     })
   } catch (error) {
     console.error('Registration error:', error)

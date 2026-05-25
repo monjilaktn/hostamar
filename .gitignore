@@ -21,7 +21,6 @@ coverage/
 # Backup env files
 .env.local_backup
 .env.vercel
-.env.marketing
 
 # Database
 *.db
@@ -65,9 +64,11 @@ tsconfig.tsbuildinfo
 # Camofox submodule (standalone, not part of main app)
 camofox/
 
+# Archived legacy files
+archive/
+
 # Misc
 .turbo
 .vercel
 .cache
 .temp
-archive/

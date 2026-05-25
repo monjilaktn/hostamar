@@ -15,16 +15,13 @@ import {
 } from "lucide-react"
 
 interface SubscriptionData {
-  currentPlan: 'FREE' | 'STARTER' | 'BUSINESS' | 'ENTERPRISE'
-  hasActiveSubscription: boolean
-  quality: string
-  videoLimit: number
-  currentSubscription?: {
-    endDate: string
-    [key: string]: any
-  }
-  totalSpent: number
-  totalOrders: number
+  currentPlan: string;
+  hasActiveSubscription: boolean;
+  currentSubscription: Record<string, unknown>;
+  totalSpent: number;
+  totalOrders: number;
+  videoLimit: number;
+  quality: string;
 }
 
 export default function SubscriptionPage() {
@@ -138,7 +135,7 @@ export default function SubscriptionPage() {
               </p>
             </div>
             <div className="text-right">
-              <p className="text-sm text-green-300">পরবর্তী বিলিং: {new Date(subscription.currentSubscription?.endDate ?? '').toLocaleDateString('bn-BD')}</p>
+              <p className="text-sm text-green-300">পরবর্তী বিলিং: {new Date(subscription.currentSubscription?.endDate as string).toLocaleDateString('bn-BD')}</p>
               <button
                 onClick={() => router.push('/payment')}
                 className="mt-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition"

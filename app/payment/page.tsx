@@ -1,237 +1,213 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { Copy, Check, Loader2, ExternalLink } from 'lucide-react'
+import { useState } from 'react';
+import {
+  AlertCircle,
+  Clock,
+  ArrowLeft,
+  Loader2,
+  Shield,
+} from 'lucide-react';
 
-const BKASH_NUMBER = '01822417463'
-const BKASH_REF = 'HOSTAMAR'
+import { Plan, PaymentMethod, PaymentState, PLANS } from '@/components/payment/types';
+import PlanSelector from '@/components/payment/plan-selector';
+import PaymentMethodSelector from '@/components/payment/payment-method-selector';
+import PhoneInput from '@/components/payment/phone-input';
+import PaymentInstructions from '@/components/payment/payment-instructions';
+import CompletedView from '@/components/payment/completed-view';
 
-const PACKAGES = [
-  { id: 'starter', name: 'স্টার্টার', credits: 10, price: 299 },
-  { id: 'growth', name: 'গ্রোথ', credits: 30, price: 699, popular: true },
-  { id: 'pro', name: 'প্রো', credits: 100, price: 1999 },
-]
+export default function PaymentPage() {
+  const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
+  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod | null>(null);
+  const [phone, setPhone] = useState('');
+  const [state, setState] = useState<PaymentState>({ status: 'idle' });
+  const [copied, setCopied] = useState(false);
 
-export default function BuyCreditsPage() {
-  const router = useRouter()
-  const [selected, setSelected] = useState('growth')
-  const [trxId, setTrxId] = useState('')
-  const [senderNumber, setSenderNumber] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState(false)
-  const [copied, setCopied] = useState(false)
+  const handleCreatePayment = async () => {
+    if (!selectedPlan || !selectedMethod || !phone) return;
 
-  const pkg = PACKAGES.find(p => p.id === selected)!
-
-  const handleCopy = async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    } catch {}
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!trxId.trim()) {
-      setError('bKash TrxID দিন')
-      return
-    }
-    setLoading(true)
-    setError('')
+    setState({ status: 'creating' });
 
     try {
-      const res = await fetch('/api/payment/bkash/verify', {
+      const res = await fetch('/api/payment/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          package: selected,
-          amount: pkg.price,
-          bkashNumber: BKASH_NUMBER,
-          trxId: trxId.trim(),
-          senderNumber: senderNumber.trim(),
+          plan: selectedPlan,
+          method: selectedMethod,
+          phone,
         }),
-      })
-      const data = await res.json()
-      if (res.ok) {
-        setSuccess(true)
-        setTrxId('')
-        setSenderNumber('')
-      } else {
-        setError(data.error || 'পেমেন্ট যাচাই করতে সমস্যা হয়েছে')
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setState({ status: 'idle', error: data.error });
+        return;
       }
-    } catch {
-      setError('সার্ভার সংযোগ ব্যর্থ')
-    } finally {
-      setLoading(false)
+
+      setState({
+        status: 'created',
+        trxId: data.trxId,
+        plan: data.plan.toLowerCase() as Plan,
+        amount: data.amount,
+        method: data.method,
+        phone: data.phone,
+        instructions: data.instructions,
+      });
+    } catch (_err) {
+      setState({ status: 'idle', error: 'Failed to create payment. Please try again.' });
     }
+  };
+
+  const handleVerifyPayment = async () => {
+    if (!state.trxId) return;
+
+    setState({ ...state, status: 'verifying' });
+
+    try {
+      const res = await fetch('/api/payment/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ trxId: state.trxId }),
+      });
+
+      const data = await res.json();
+
+      if (data.status === 'completed') {
+        setState({ ...state, status: 'completed', message: data.message });
+      } else {
+        setState({ ...state, status: 'created', message: data.message });
+      }
+    } catch (_err) {
+      setState({ ...state, status: 'created', error: 'Failed to verify payment. Please try again.' });
+    }
+  };
+
+  const copyTrxId = () => {
+    if (state.trxId) {
+      navigator.clipboard.writeText(state.trxId);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const reset = () => {
+    setSelectedPlan(null);
+    setSelectedMethod(null);
+    setPhone('');
+    setState({ status: 'idle' });
+    setCopied(false);
+  };
+
+  if (state.status === 'completed') {
+    return <CompletedView state={state} />;
   }
 
-  if (success) {
-    return (
-      <main className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center px-4">
-        <div className="max-w-md w-full rounded-xl border border-green-500/30 bg-gray-800 p-8 text-center">
-          <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-4">✅</div>
-          <h1 className="text-2xl font-bold text-white mb-2">পেমেন্ট সাবমিট হয়েছে!</h1>
-          <p className="text-gray-400 mb-2">
-            <span className="text-green-400 font-bold">{pkg.credits}</span> ক্রেডিট যোগ হবে
-          </p>
-          <p className="text-gray-500 text-sm mb-6">
-            অ্যাডমিন যাচাই করার পর স্বয়ংক্রিয়ভাবে ক্রেডিট যোগ হবে (২৪ ঘন্টার মধ্যে)
-          </p>
-          <button
-            onClick={() => router.push('/dashboard')}
-            className="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 rounded-lg transition"
-          >
-            ড্যাশবোর্ডে যান
-          </button>
-        </div>
-      </main>
-    )
-  }
+  const isBusy = state.status === 'creating' || state.status === 'verifying';
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 py-16 px-4">
-      <div className="max-w-2xl mx-auto">
-        <div className="text-center mb-10">
-          <h1 className="text-3xl font-bold text-white mb-2">ক্রেডিট কিনুন</h1>
-          <p className="text-gray-400">bKash Personal-এর মাধ্যমে পেমেন্ট করুন</p>
+    <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 text-white">
+      {/* Header */}
+      <header className="container mx-auto px-4 py-6">
+        <nav className="flex items-center gap-4">
+          <button
+            onClick={() => window.history.back()}
+            className="p-2 hover:bg-white/5 rounded-lg transition"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <div className="text-2xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+            Hostamar.com
+          </div>
+        </nav>
+      </header>
+
+      <main className="container mx-auto px-4 py-12 max-w-4xl">
+        {/* Page Title */}
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold mb-3">পেমেন্ট করুন</h1>
+          <p className="text-gray-400 text-lg">Make a Payment</p>
         </div>
 
-        {/* Package Selection */}
-        <div className="grid md:grid-cols-3 gap-4 mb-8">
-          {PACKAGES.map(pkg => (
+        {/* Error Display */}
+        {state.error && (
+          <div className="mb-8 bg-red-500/10 border border-red-500/20 rounded-xl p-4 flex items-center gap-3">
+            <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
+            <p className="text-red-300 text-sm">{state.error}</p>
+          </div>
+        )}
+
+        {/* Message Display */}
+        {state.message && state.status !== 'completed' && (
+          <div className="mb-8 bg-blue-500/10 border border-blue-500/20 rounded-xl p-4 flex items-center gap-3">
+            <Clock className="w-5 h-5 text-blue-400 flex-shrink-0" />
+            <p className="text-blue-300 text-sm">{state.message}</p>
+          </div>
+        )}
+
+        <div className="grid md:grid-cols-2 gap-8">
+          {/* Left Column - Selection */}
+          <div className="space-y-6">
+            <PlanSelector
+              selectedPlan={selectedPlan}
+              onSelect={setSelectedPlan}
+              disabled={isBusy}
+            />
+
+            <PaymentMethodSelector
+              selectedMethod={selectedMethod}
+              onSelect={setSelectedMethod}
+              disabled={isBusy}
+            />
+
+            <PhoneInput
+              phone={phone}
+              onChange={setPhone}
+              disabled={isBusy}
+            />
+
+            {/* Create Payment Button */}
             <button
-              key={pkg.id}
-              onClick={() => setSelected(pkg.id)}
-              className={`relative rounded-xl border-2 p-5 text-left transition-all ${
-                selected === pkg.id
-                  ? 'border-pink-500 bg-pink-500/10 shadow-lg shadow-pink-500/20'
-                  : 'border-gray-700 bg-gray-800 hover:border-gray-600'
+              onClick={handleCreatePayment}
+              disabled={!selectedPlan || !selectedMethod || !phone || isBusy}
+              className={`w-full py-4 rounded-xl font-semibold text-lg transition-all ${
+                selectedPlan && selectedMethod && phone
+                  ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-500 hover:to-purple-500 shadow-lg shadow-blue-600/25'
+                  : 'bg-gray-800 text-gray-500 cursor-not-allowed'
               }`}
             >
-              {pkg.popular && (
-                <span className="absolute -top-3 left-4 bg-pink-600 text-white text-xs font-bold px-3 py-1 rounded-full">
-                  জনপ্রিয়
+              {state.status === 'creating' ? (
+                <span className="flex items-center justify-center gap-2">
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Creating Payment...
                 </span>
+              ) : (
+                `Pay ৳${selectedPlan ? PLANS[selectedPlan].amount.toLocaleString() : '0'}`
               )}
-              <h3 className="text-lg font-bold text-white mb-1">{pkg.name}</h3>
-              <p className="text-2xl font-bold text-pink-400 mb-2">৳{pkg.price}</p>
-              <p className="text-gray-400 text-sm">
-                <span className="text-white font-semibold">{pkg.credits}</span> ভিডিও ক্রেডিট
-              </p>
             </button>
-          ))}
-        </div>
+          </div>
 
-        {/* bKash Instructions */}
-        <div className="rounded-xl border-2 border-pink-500/30 bg-pink-500/5 p-6 mb-8">
-          <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-            <span className="text-2xl">💳</span> bKash Personal-এ পেমেন্ট করুন
-          </h2>
-
-          <div className="space-y-3">
-            <div className="flex items-center justify-between bg-white/5 rounded-lg p-3 border border-white/10">
-              <div>
-                <p className="text-xs text-gray-400">bKash Agent Number</p>
-                <p className="text-xl font-bold text-white">{BKASH_NUMBER}</p>
-              </div>
-              <button
-                onClick={() => handleCopy(BKASH_NUMBER)}
-                className="p-2 rounded-lg hover:bg-white/10 transition"
-              >
-                {copied ? <Check className="w-5 h-5 text-green-400" /> : <Copy className="w-5 h-5 text-gray-400" />}
-              </button>
-            </div>
-
-            <div className="flex items-center justify-between bg-white/5 rounded-lg p-3 border border-white/10">
-              <div>
-                <p className="text-xs text-gray-400">রেফারেন্স</p>
-                <p className="text-lg font-bold text-white">{BKASH_REF}</p>
-              </div>
-              <button
-                onClick={() => handleCopy(BKASH_REF)}
-                className="p-2 rounded-lg hover:bg-white/10 transition"
-              >
-                {copied ? <Check className="w-5 h-5 text-green-400" /> : <Copy className="w-5 h-5 text-gray-400" />}
-              </button>
-            </div>
-
-            <p className="text-xs text-gray-500 mt-2">
-              আপনার bKash অ্যাপ থেকে <strong className="text-white">Send Money</strong> → উপরের নম্বরে টাকা পাঠান।
-              রেফারেন্স হিসেবে <strong className="text-white">{BKASH_REF}</strong> লিখুন। তারপর নিচে TrxID দিন।
-            </p>
+          {/* Right Column - Instructions */}
+          <div>
+            <PaymentInstructions
+              state={state}
+              onVerify={handleVerifyPayment}
+              onReset={reset}
+              copied={copied}
+              onCopy={copyTrxId}
+            />
           </div>
         </div>
 
-        {/* Submission Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-              <p className="text-xs text-gray-400 mb-1">প্যাকেজ</p>
-              <p className="text-lg font-bold text-white">{pkg.name}</p>
-            </div>
-            <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-              <p className="text-xs text-gray-400 mb-1">পরিমাণ</p>
-              <p className="text-lg font-bold text-pink-400">৳{pkg.price}</p>
-            </div>
+        {/* Security Note */}
+        <div className="mt-12 text-center">
+          <div className="inline-flex items-center gap-2 text-sm text-gray-500">
+            <Shield className="w-4 h-4" />
+            <span>Secure payment powered by bKash & Nagad &bull; SSL Encrypted</span>
           </div>
-
-          {error && (
-            <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
-              {error}
-            </div>
-          )}
-
-          <div>
-            <label className="block text-sm text-gray-400 mb-1">
-              bKash TrxID <span className="text-red-400">*</span>
-            </label>
-            <input
-              type="text"
-              value={trxId}
-              onChange={e => setTrxId(e.target.value)}
-              required
-              placeholder="TrxID উদাহরণ: A7B8C9D0E1F2G3H4"
-              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm text-gray-400 mb-1">
-              আপনার bKash নম্বর (ঐচ্ছিক)
-            </label>
-            <input
-              type="text"
-              value={senderNumber}
-              onChange={e => setSenderNumber(e.target.value)}
-              placeholder="01XXXXXXXXX"
-              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading || !trxId.trim()}
-            className="w-full bg-pink-600 hover:bg-pink-700 disabled:opacity-50 text-white font-semibold py-3 rounded-lg transition flex items-center justify-center gap-2"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                যাচাই হচ্ছে...
-              </>
-            ) : (
-              `পেমেন্ট সাবমিট করুন — ৳${pkg.price}`
-            )}
-          </button>
-
-          <p className="text-xs text-gray-500 text-center">
-            অ্যাডমিন manually TrxID যাচাই করার পর ক্রেডিট যোগ হবে (সাধারণত ২৪ ঘন্টার মধ্যে)
-          </p>
-        </form>
-      </div>
-    </main>
-  )
+        </div>
+      </main>
+    </div>
+  );
 }

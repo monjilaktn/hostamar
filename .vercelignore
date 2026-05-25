@@ -9,3 +9,13 @@ __pycache__
 camofox/
 build.tar.gz
 next.tar.gz
+*.tgz
+*.zip
+marketing-output/
+logs/
+data/
+eval/
+foundry/
+nginx/
+dns/
+emails/

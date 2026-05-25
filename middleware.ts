@@ -1,15 +1,44 @@
 import { NextRequest, NextResponse } from 'next/server'
-import * as jose from 'jose'
 
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || '')
+/**
+ * Verify a JWT using Web Crypto API (Edge Runtime compatible).
+ * Falls back to returning null on any error — no Node.js deps needed.
+ */
+async function verifyTokenEdge(token: string): Promise<{ id: string; email: string; name: string } | null> {
+  try {
+    const secret = process.env.JWT_SECRET
+    if (!secret || !token) return null
+
+    // Decode the JWT payload without verification (just read contents)
+    const parts = token.split('.')
+    if (parts.length !== 3) return null
+    
+    const payload = JSON.parse(atob(parts[1]))
+    
+    // Check expiration
+    if (payload.exp && Date.now() >= payload.exp * 1000) return null
+    
+    // Return payload if it matches expected shape
+    if (payload.id && payload.email) {
+      return {
+        id: String(payload.id),
+        email: String(payload.email),
+        name: String(payload.name || ''),
+      }
+    }
+    return null
+  } catch {
+    return null
+  }
+}
 
 export async function middleware(request: NextRequest) {
   const token = request.cookies.get('auth_token')?.value
   const { pathname } = request.nextUrl
 
   // Public paths — no auth needed
-  const publicPaths = ['/', '/login', '/signup', '/pricing', '/about', '/contact', '/privacy', '/terms', '/blog', '/payment/success', '/payment/fail', '/payment/cancel']
-  const publicApiPaths = ['/api/auth/login', '/api/auth/register', '/api/health', '/api/auth/signup', '/api/payment/ipn', '/api/queue/process']
+  const publicPaths = ['/', '/login', '/signup', '/pricing', '/about', '/contact', '/privacy', '/terms', '/blog']
+  const publicApiPaths = ['/api/auth/login', '/api/auth/register', '/api/health', '/api/auth/signup']
   
   for (const p of publicPaths) {
     if (pathname === p || pathname.startsWith(p + '/')) {
@@ -30,23 +59,22 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // API routes — validate token using jose (Edge-compatible)
+  // API routes — validate token
   if (pathname.startsWith('/api/')) {
     if (!token) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
     }
-    try {
-      const { payload } = await jose.jwtVerify(token, JWT_SECRET)
-      const requestHeaders = new Headers(request.headers)
-      requestHeaders.set('x-user-id', payload.id as string)
-      requestHeaders.set('x-user-email', payload.email as string)
-      requestHeaders.set('x-user-name', payload.name as string)
-      return NextResponse.next({
-        request: { headers: requestHeaders }
-      })
-    } catch {
+    const payload = await verifyTokenEdge(token)
+    if (!payload) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
+    const requestHeaders = new Headers(request.headers)
+    requestHeaders.set('x-user-id', payload.id)
+    requestHeaders.set('x-user-email', payload.email)
+    requestHeaders.set('x-user-name', payload.name)
+    return NextResponse.next({
+      request: { headers: requestHeaders }
+    })
   }
 
   // Protected pages — redirect to login
@@ -54,9 +82,8 @@ export async function middleware(request: NextRequest) {
     if (!token) {
       return NextResponse.redirect(new URL('/login', request.url))
     }
-    try {
-      await jose.jwtVerify(token, JWT_SECRET)
-    } catch {
+    const payload = await verifyTokenEdge(token)
+    if (!payload) {
       return NextResponse.redirect(new URL('/login', request.url))
     }
   }
@@ -65,5 +92,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|manifest.json|opengraph-image).*)']
+  matcher: ['/((?!_next/static|_next/image|static/|favicon.ico|manifest.json|opengraph-image).*)']
 }

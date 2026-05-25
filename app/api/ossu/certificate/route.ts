@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://hostamar.com';
+
 // Certificate generation endpoint
 export async function POST(req: NextRequest) {
   const { userId, courseId, userName } = await req.json();
@@ -11,7 +13,7 @@ export async function POST(req: NextRequest) {
     courseId,
     userName,
     issuedAt: new Date().toISOString(),
-    verificationUrl: `https://hostamar.com/ossu/certificate/${userId}/${courseId}`,
+    verificationUrl: `${SITE_URL}/ossu/certificate/${userId}/${courseId}`,
   };
 
   return NextResponse.json({ success: true, certificate });

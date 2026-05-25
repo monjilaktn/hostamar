@@ -82,12 +82,6 @@ export default function LoginPage() {
               />
             </div>
 
-            <div className="text-right">
-              <a href="/forgot-password" className="text-xs text-blue-400 hover:underline">
-                পাসওয়ার্ড ভুলে গেছেন?
-              </a>
-            </div>
-
             <button
               type="submit"
               disabled={loading}

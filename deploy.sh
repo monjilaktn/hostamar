@@ -15,6 +15,38 @@
 set -euo pipefail
 
 # ---------------------------------------------------------------------------
+# Rollback function (defined before use)
+# ---------------------------------------------------------------------------
+rollback() {
+    echo ""
+    warn "============================================"
+    warn "  ROLLBACK IN PROGRESS"
+    warn "============================================"
+
+    # Stop the new deployment
+    docker compose -f "$COMPOSE_FILE" down 2>/dev/null || true
+
+    # Restore previous images if they exist
+    APP_ROLLBACK=$(docker images --format '{{.Repository}}:{{.Tag}}' | grep "$ROLLBACK_TAG-app" | head -1 || true)
+    WORKER_ROLLBACK=$(docker images --format '{{.Repository}}:{{.Tag}}' | grep "$ROLLBACK_TAG-worker" | head -1 || true)
+
+    if [ -n "$APP_ROLLBACK" ]; then
+        info "Restoring app image from snapshot..."
+        docker tag "$APP_ROLLBACK" "$(docker inspect --format '{{.Config.Image}}' "$APP_ROLLBACK" 2>/dev/null || echo 'hostamar-app:latest')" 2>/dev/null || true
+    fi
+
+    # Restart the previous deployment
+    if docker compose -f "$COMPOSE_FILE" up -d 2>&1; then
+        ok "Rollback completed — previous version is now running."
+    else
+        fail "Rollback failed! Manual intervention required."
+        fail "Try: docker compose -f ${COMPOSE_FILE} up -d"
+    fi
+}
+
+# ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
 # Colors & helpers
 # ---------------------------------------------------------------------------
 RED='\033[0;31m'
@@ -208,34 +240,4 @@ echo "║  App:    ${HEALTH_URL}                         "
 echo "║  Stack:  $(docker compose -f ${COMPOSE_FILE} ps --services | tr '\n' ' ')  "
 echo "║  Time:   $(date '+%Y-%m-%d %H:%M:%S UTC')                    ║"
 echo "╚══════════════════════════════════════════════════════════════╝"
-echo ""
 
-# =============================================================================
-# Rollback function
-# =============================================================================
-rollback() {
-    echo ""
-    warn "============================================"
-    warn "  ROLLBACK IN PROGRESS"
-    warn "============================================"
-
-    # Stop the new deployment
-    docker compose -f "$COMPOSE_FILE" down 2>/dev/null || true
-
-    # Restore previous images if they exist
-    APP_ROLLBACK=$(docker images --format '{{.Repository}}:{{.Tag}}' | grep "$ROLLBACK_TAG-app" | head -1 || true)
-    WORKER_ROLLBACK=$(docker images --format '{{.Repository}}:{{.Tag}}' | grep "$ROLLBACK_TAG-worker" | head -1 || true)
-
-    if [ -n "$APP_ROLLBACK" ]; then
-        info "Restoring app image from snapshot..."
-        docker tag "$APP_ROLLBACK" "$(docker inspect --format '{{.Config.Image}}' "$APP_ROLLBACK" 2>/dev/null || echo 'hostamar-app:latest')" 2>/dev/null || true
-    fi
-
-    # Restart the previous deployment
-    if docker compose -f "$COMPOSE_FILE" up -d 2>&1; then
-        ok "Rollback completed — previous version is now running."
-    else
-        fail "Rollback failed! Manual intervention required."
-        fail "Try: docker compose -f ${COMPOSE_FILE} up -d"
-    fi
-}

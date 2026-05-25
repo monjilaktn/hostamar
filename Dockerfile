@@ -57,8 +57,14 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Copy Prisma schema (needed for migrations at runtime)
+# Prisma: copy schema + generate client in standalone node_modules
 COPY --from=builder /app/prisma ./prisma
+RUN npx prisma generate --schema=./prisma/schema.prisma 2>/dev/null || true
+
+# Symlink node_modules to standalone location so worker can find @prisma/client
+RUN if [ -d ".next/standalone/node_modules/@prisma" ]; then \
+      ln -sf .next/standalone/node_modules node_modules; \
+    fi
 
 # Copy compiled worker bundle
 COPY --from=builder /app/dist ./dist
